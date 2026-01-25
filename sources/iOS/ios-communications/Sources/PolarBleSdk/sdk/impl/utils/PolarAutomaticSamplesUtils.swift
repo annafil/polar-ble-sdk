@@ -25,9 +25,15 @@ internal class PolarAutomaticSamplesUtils {
                 do {
                     let dir = try Protocol_PbPFtpDirectory(serializedData: Data(response))
                     let regex = try NSRegularExpression(pattern: AUTOMATIC_SAMPLES_PATTERN)
+                    let fromDOY = Calendar.current.ordinality(of: .day, in: .year, for: fromDate) ?? 1
+                    let toDOY = Calendar.current.ordinality(of: .day, in: .year, for: toDate) ?? 366
                     let filteredFiles = dir.entries.compactMap { entry -> String? in
                         let range = NSRange(location: 0, length: entry.name.count)
-                        return regex.firstMatch(in: entry.name, range: range) != nil ? entry.name : nil
+                        guard regex.firstMatch(in: entry.name, range: range) != nil,
+                              let numRange = Range(NSRange(location: 5, length: 3), in: entry.name),
+                              let dayNum = Int(entry.name[numRange]),
+                              dayNum >= fromDOY && dayNum <= toDOY else { return nil }
+                        return entry.name
                     }
 
                     return Observable.from(filteredFiles)
@@ -84,9 +90,15 @@ internal class PolarAutomaticSamplesUtils {
                 do {
                     let dir = try Protocol_PbPFtpDirectory(serializedData: Data(response))
                     let regex = try NSRegularExpression(pattern: AUTOMATIC_SAMPLES_PATTERN)
+                    let fromDOY = Calendar.current.ordinality(of: .day, in: .year, for: fromDate) ?? 1
+                    let toDOY = Calendar.current.ordinality(of: .day, in: .year, for: toDate) ?? 366
                     let filteredFiles = dir.entries.compactMap { entry -> String? in
                         let range = NSRange(location: 0, length: entry.name.count)
-                        return regex.firstMatch(in: entry.name, range: range) != nil ? entry.name : nil
+                        guard regex.firstMatch(in: entry.name, range: range) != nil,
+                              let numRange = Range(NSRange(location: 5, length: 3), in: entry.name),
+                              let dayNum = Int(entry.name[numRange]),
+                              dayNum >= fromDOY && dayNum <= toDOY else { return nil }
+                        return entry.name
                     }
 
                     return Observable.from(filteredFiles)
