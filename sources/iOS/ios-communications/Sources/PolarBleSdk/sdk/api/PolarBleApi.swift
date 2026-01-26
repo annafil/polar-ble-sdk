@@ -468,8 +468,11 @@ public protocol PolarBleApi: PolarOfflineRecordingApi, PolarOnlineStreamingApi, 
     /// @param identifier, Polar device ID or BT address
     /// @param dataType, [PolarStoredDataType] A specific data type that shall be deleted
     /// @param until, Data will be deleted from device from history until this date.
+    /// @param wearableTimezone, The timezone of the wearable device. If nil, uses phone timezone.
+    ///                          IMPORTANT: Pass the wearable's timezone for accurate date comparison when
+    ///                          phone and wearable timezones differ (e.g., after traveling).
     /// @return [Completable] emitting success or error
-    func deleteStoredDeviceData(_ identifier: String, dataType: PolarStoredDataType.StoredDataType, until: Date?) -> Completable
+    func deleteStoredDeviceData(_ identifier: String, dataType: PolarStoredDataType.StoredDataType, until: Date?, wearableTimezone: TimeZone?) -> Completable
     
     /// Delete device date folders from a device.
     /// - Parameters:

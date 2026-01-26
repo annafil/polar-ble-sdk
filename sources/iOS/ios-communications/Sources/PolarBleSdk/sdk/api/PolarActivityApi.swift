@@ -48,8 +48,11 @@ public protocol PolarActivityApi {
     ///   - identifier: The Polar device ID or BT address.
     ///   - fromDate: The starting date of the period to retrieve heart rate samples from.
     ///   - toDate: The ending date of the period to retrieve heart rate samples from.
+    ///   - wearableTimezone: The timezone of the wearable device. If nil, uses phone timezone.
+    ///                       IMPORTANT: Pass the wearable's timezone for accurate date filtering when
+    ///                       phone and wearable timezones differ (e.g., after traveling).
     /// - Returns: A Single emitting an array of `PolarActiveTimeData` representing the heart rate samples data for the specified period.
-    func get247HrSamples(identifier: String, fromDate: Date, toDate: Date) -> Single<[Polar247HrSamplesData]>
+    func get247HrSamples(identifier: String, fromDate: Date, toDate: Date, wearableTimezone: TimeZone?) -> Single<[Polar247HrSamplesData]>
 
     /// Get nightly recharge for a given period.
     ///
@@ -75,8 +78,11 @@ public protocol PolarActivityApi {
     ///   - identifier: Polar device ID or BT address
     ///   - fromDate: The starting date of the period to retrieve 24/7 PPi data from
     ///   - toDate: The ending date of the period to retrieve 24/7 PPi data from
+    ///   - wearableTimezone: The timezone of the wearable device. If nil, uses phone timezone.
+    ///                       IMPORTANT: Pass the wearable's timezone for accurate date filtering when
+    ///                       phone and wearable timezones differ (e.g., after traveling).
     /// - Returns: A [Single] emitting a list of [Polar247PPiSamplesData] representing the 24/7 PPi data for the specified period.
-    func get247PPiSamples(identifier: String, fromDate: Date, toDate: Date) -> Single<[Polar247PPiSamplesData]>
+    func get247PPiSamples(identifier: String, fromDate: Date, toDate: Date, wearableTimezone: TimeZone?) -> Single<[Polar247PPiSamplesData]>
 
     /// Load activity sample data from a device for a given period.
     ///

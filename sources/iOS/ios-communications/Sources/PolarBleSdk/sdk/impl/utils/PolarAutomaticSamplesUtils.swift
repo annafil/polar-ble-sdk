@@ -18,8 +18,15 @@ private struct AutosFileEntry {
 internal class PolarAutomaticSamplesUtils {
     
     /// Read 24/7 heart rate samples for a given date range.
-    static func read247HrSamples(client: BlePsFtpClient, fromDate: Date, toDate: Date) -> Single<[Polar247HrSamplesData]> {
-        BleLogger.trace(TAG, "read247HrSamples: from \(fromDate) to \(toDate)")
+    /// - Parameters:
+    ///   - client: The BLE PSFTP client
+    ///   - fromDate: Start date for the query
+    ///   - toDate: End date for the query
+    ///   - wearableTimezone: The timezone of the wearable device. If nil, uses Calendar.current (phone timezone).
+    ///                       IMPORTANT: The wearable stores dates in its local timezone, so passing the correct
+    ///                       wearable timezone ensures accurate date filtering when phone and wearable timezones differ.
+    static func read247HrSamples(client: BlePsFtpClient, fromDate: Date, toDate: Date, wearableTimezone: TimeZone? = nil) -> Single<[Polar247HrSamplesData]> {
+        BleLogger.trace(TAG, "read247HrSamples: from \(fromDate) to \(toDate), wearableTimezone: \(wearableTimezone?.identifier ?? "nil (using phone)")")
 
         let autoSamplesPath = "\(ARABICA_USER_ROOT_FOLDER)\(AUTOMATIC_SAMPLES_DIRECTORY)"
         let listOperation = Protocol_PbPFtpOperation.with {
@@ -67,7 +74,13 @@ internal class PolarAutomaticSamplesUtils {
                                     do {
                                         let sampleSessions = try Data_PbAutomaticSampleSessions(serializedData: Data(fileResponse))
                                         let sampleDateProto = sampleSessions.day
-                                        let sampleDate = Calendar.current.date(from: DateComponents(
+
+                                        // FORK: Use wearable timezone if provided, otherwise fall back to phone timezone
+                                        var calendar = Calendar.current
+                                        if let tz = wearableTimezone {
+                                            calendar.timeZone = tz
+                                        }
+                                        let sampleDate = calendar.date(from: DateComponents(
                                             year: Int(sampleDateProto.year),
                                             month: Int(sampleDateProto.month),
                                             day: Int(sampleDateProto.day)
@@ -86,7 +99,7 @@ internal class PolarAutomaticSamplesUtils {
                                         guard sampleDate >= fromDate && sampleDate <= toDate else { return nil }
 
                                         let samples = try Polar247HrSamplesData.fromPbHrDataSamples(samples: sampleSessions.samples)
-                                        return Polar247HrSamplesData(date: Calendar.current.dateComponents([.year, .month, .day], from: sampleDate), samples: samples)
+                                        return Polar247HrSamplesData(date: calendar.dateComponents([.year, .month, .day], from: sampleDate), samples: samples)
                                     } catch {
                                         BleLogger.error(TAG, "Failed to parse HR in \(fileEntry.name): \(error)")
                                         return nil
@@ -103,8 +116,15 @@ internal class PolarAutomaticSamplesUtils {
     }
 
     /// Read 24/7 peak-to-peak interval samples for a given date range.
-    static func read247PPiSamples(client: BlePsFtpClient, fromDate: Date, toDate: Date) -> Single<[Polar247PPiSamplesData]> {
-        BleLogger.trace(TAG, "read247PPiSamples: from \(fromDate) to \(toDate)")
+    /// - Parameters:
+    ///   - client: The BLE PSFTP client
+    ///   - fromDate: Start date for the query
+    ///   - toDate: End date for the query
+    ///   - wearableTimezone: The timezone of the wearable device. If nil, uses Calendar.current (phone timezone).
+    ///                       IMPORTANT: The wearable stores dates in its local timezone, so passing the correct
+    ///                       wearable timezone ensures accurate date filtering when phone and wearable timezones differ.
+    static func read247PPiSamples(client: BlePsFtpClient, fromDate: Date, toDate: Date, wearableTimezone: TimeZone? = nil) -> Single<[Polar247PPiSamplesData]> {
+        BleLogger.trace(TAG, "read247PPiSamples: from \(fromDate) to \(toDate), wearableTimezone: \(wearableTimezone?.identifier ?? "nil (using phone)")")
 
         let autoSamplesPath = "\(ARABICA_USER_ROOT_FOLDER)\(AUTOMATIC_SAMPLES_DIRECTORY)"
         let operation = Protocol_PbPFtpOperation.with {
@@ -152,7 +172,13 @@ internal class PolarAutomaticSamplesUtils {
                                     do {
                                         let sampleSessions = try Data_PbAutomaticSampleSessions(serializedData: Data(fileResponse))
                                         let sampleDateProto = sampleSessions.day
-                                        let sampleDate = Calendar.current.date(from: DateComponents(
+
+                                        // FORK: Use wearable timezone if provided, otherwise fall back to phone timezone
+                                        var calendar = Calendar.current
+                                        if let tz = wearableTimezone {
+                                            calendar.timeZone = tz
+                                        }
+                                        let sampleDate = calendar.date(from: DateComponents(
                                             year: Int(sampleDateProto.year),
                                             month: Int(sampleDateProto.month),
                                             day: Int(sampleDateProto.day)
@@ -171,7 +197,7 @@ internal class PolarAutomaticSamplesUtils {
                                         guard sampleDate >= fromDate && sampleDate <= toDate else { return nil }
 
                                         let samples = sampleSessions.ppiSamples.map { Polar247PPiSamplesData.fromPbPPiDataSamples(ppiData: $0) }
-                                        return Polar247PPiSamplesData(date: Calendar.current.dateComponents([.year, .month, .day], from: sampleDate), samples: samples)
+                                        return Polar247PPiSamplesData(date: calendar.dateComponents([.year, .month, .day], from: sampleDate), samples: samples)
                                     } catch {
                                         BleLogger.error(TAG, "Failed to parse PPI in \(fileEntry.name): \(error)")
                                         return nil

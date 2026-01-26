@@ -3310,27 +3310,27 @@ extension PolarBleApiImpl: PolarBleApi  {
         }
     }
 
-    func get247HrSamples(identifier: String, fromDate: Date, toDate: Date) -> Single<[Polar247HrSamplesData]> {
+    func get247HrSamples(identifier: String, fromDate: Date, toDate: Date, wearableTimezone: TimeZone?) -> Single<[Polar247HrSamplesData]> {
         do {
             let session = try self.sessionFtpClientReady(identifier)
             guard let client = session.fetchGattClient(BlePsFtpClient.PSFTP_SERVICE) as? BlePsFtpClient else {
                 return Single.error(PolarErrors.serviceNotFound)
             }
 
-            return PolarAutomaticSamplesUtils.read247HrSamples(client: client, fromDate: fromDate, toDate: toDate)
+            return PolarAutomaticSamplesUtils.read247HrSamples(client: client, fromDate: fromDate, toDate: toDate, wearableTimezone: wearableTimezone)
         } catch {
             return Single.error(handleError(error))
         }
     }
-    
-    func get247PPiSamples(identifier: String, fromDate: Date, toDate: Date) -> Single<[Polar247PPiSamplesData]> {
+
+    func get247PPiSamples(identifier: String, fromDate: Date, toDate: Date, wearableTimezone: TimeZone?) -> Single<[Polar247PPiSamplesData]> {
         do {
             let session = try self.sessionFtpClientReady(identifier)
             guard let client = session.fetchGattClient(BlePsFtpClient.PSFTP_SERVICE) as? BlePsFtpClient else {
                 return Single.error(PolarErrors.serviceNotFound)
             }
 
-            return PolarAutomaticSamplesUtils.read247PPiSamples(client: client, fromDate: fromDate, toDate: toDate)
+            return PolarAutomaticSamplesUtils.read247PPiSamples(client: client, fromDate: fromDate, toDate: toDate, wearableTimezone: wearableTimezone)
         } catch {
             return Single.error(handleError(error))
         }
@@ -3846,11 +3846,11 @@ extension PolarBleApiImpl: PolarBleApi  {
         }
     }
 
-    func deleteStoredDeviceData(_ identifier: String, dataType: PolarStoredDataType.StoredDataType, until: Date?) -> Completable {
-        
+    func deleteStoredDeviceData(_ identifier: String, dataType: PolarStoredDataType.StoredDataType, until: Date?, wearableTimezone: TimeZone?) -> Completable {
+
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyyMMdd"
-        
+
         let entryPattern = dataType.rawValue
         var condition: (_ p: String) -> Bool
         var folderPath: String = "/U/0"
@@ -3896,13 +3896,13 @@ extension PolarBleApiImpl: PolarBleApi  {
         case .UNDEFINED:
             return Completable.empty()
         }
-        
+
         return listFiles(identifier: identifier, folderPath: folderPath, condition: condition)
             .flatMap { [self] (file) -> Single<String> in
                 switch dataType {
                 case .AUTO_SAMPLE:
                     BleLogger.trace("Delete file \(file) from /U/0/AUTOS/ folder.")
-                    return checkAutoSampleFile(identifier: identifier, filePath: file, until: until!)
+                    return checkAutoSampleFile(identifier: identifier, filePath: file, until: until!, wearableTimezone: wearableTimezone)
                         .flatMap { [self] canDelete in
                             if canDelete {
                                 return removeSingleFile(identifier: identifier, filePath: file)
@@ -4534,29 +4534,32 @@ extension PolarBleApiImpl: PolarBleApi  {
         }
     }
     
-    private func checkAutoSampleFile(identifier: String, filePath: String, until: Date) -> Single<Bool> {
+    private func checkAutoSampleFile(identifier: String, filePath: String, until: Date, wearableTimezone: TimeZone?) -> Single<Bool> {
 
-        var canDelete = false
         return getFile(identifier: identifier, filePath: filePath)
             .map { file -> Bool in
-                let calendar = Calendar.current
-                let dateFormatter = DateFormatter()
-                dateFormatter.dateFormat = "yyyyMMdd"
-                dateFormatter.timeZone = TimeZone(abbreviation: "UTC")
-
                 let fileData = try Data_PbAutomaticSampleSessions(serializedData: file as Data)
-                let proto = AutomaticSamples.fromProto(proto: fileData)
-                let dateCompareResult = calendar.compare(self.dateFromStringWOTime(dateFrom: dateFormatter.string(from: proto.day!)), to: self.dateFromStringWOTime(dateFrom: dateFormatter.string(from: until)), toGranularity: .day)
 
-                switch dateCompareResult {
-                case .orderedSame:
-                    canDelete = true
-                case .orderedAscending:
-                    canDelete = true
-                case .orderedDescending:
-                    break
+                // Get raw date components from protobuf (these are in wearable's local timezone)
+                let fileYear = Int(fileData.day.year)
+                let fileMonth = Int(fileData.day.month)
+                let fileDay = Int(fileData.day.day)
+
+                // Convert 'until' date to year/month/day in wearable timezone
+                var calendar = Calendar.current
+                if let tz = wearableTimezone {
+                    calendar.timeZone = tz
                 }
-                return canDelete
+                let untilComponents = calendar.dateComponents([.year, .month, .day], from: until)
+                let untilYear = untilComponents.year!
+                let untilMonth = untilComponents.month!
+                let untilDay = untilComponents.day!
+
+                // Compare as YYYYMMDD integers: delete if file date <= until date
+                let fileInt = fileYear * 10000 + fileMonth * 100 + fileDay
+                let untilInt = untilYear * 10000 + untilMonth * 100 + untilDay
+
+                return fileInt <= untilInt
             }.asSingle()
     }
 
