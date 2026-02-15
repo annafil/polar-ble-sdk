@@ -4538,7 +4538,13 @@ extension PolarBleApiImpl: PolarBleApi  {
 
         return getFile(identifier: identifier, filePath: filePath)
             .map { file -> Bool in
-                let fileData = try Data_PbAutomaticSampleSessions(serializedData: file as Data)
+                let fileData: Data_PbAutomaticSampleSessions
+                do {
+                    fileData = try Data_PbAutomaticSampleSessions(serializedData: file as Data)
+                } catch {
+                    BleLogger.error("checkAutoSampleFile: Failed to parse \(filePath): \(error). Skipping delete for this file.")
+                    return false
+                }
 
                 // Get raw date components from protobuf (these are in wearable's local timezone)
                 let fileYear = Int(fileData.day.year)
