@@ -40,7 +40,6 @@ iOS Communications XCode project (i.e. `iOSCommunications.xcworkspace`) contains
 * iOS Communications project is made available via Swift Package. Please get familiar with [XCode help](https://developer.apple.com/documentation/swift_packages/adding_package_dependencies_to_your_app) how to take Swift Package into use on your project.
 
 ### ... using CocoaPods
-* iOS Communications is shared privately within Polar via [internal podspec repository](https://git.polar.grp/projects/CS/repos/ios-podspecs)
 * In your `Podfile` add
 ```
 source 'https://github.com/CocoaPods/Specs.git'
@@ -64,7 +63,6 @@ $ pod install
 * Copy generated XCFramework from `iOSCommunicationsBuild/`  or from `SdkBuild/` to your project
 
 ### ... using git submodules
-* `git submodule add ssh://git@git.polar.grp:7999/cs/ios-communications.git`
 * Drag and drop the iOS communications project file (i.e. `iOSCommunications.xcodeproj`) to yours Xcode project Project Navigator
 *  In your project choose the `Target → General → Frameworks, Libraries and Embedded Content → Press "+"`. From opened dialog select the target `iOSCommunications`, `PolarBleSdk` or `PolarBleSdkWatchOs` depending on your needs.  
 
@@ -81,12 +79,6 @@ $ pod install
     <key>NSBluetoothAlwaysUsageDescription</key>
     <string>Needs BLE permission</string>
     ```
-
-## Releasing 
-### ... iOS Communications
-* https://wiki.polar.grp/display/B2CMA/iOS+Communications+-+Release+Steps
-### ... iOS SDK
-* https://wiki.polar.grp/display/B2CMA/iOS+SDK+-+Release+Steps
 
 ## Debugging
 
