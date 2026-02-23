@@ -275,4 +275,64 @@ class BleBasClientTest: XCTestCase {
         XCTAssertEqual(events[10]?.wirelessExternalPowerConnected, BleBasClient.PowerSourceState.reservedForFutureUse)
 
     }
+    
+    func testGetBatteryLevel_should_return_newest_battery_level_value() throws {
+        
+        // Arrange
+        let characteristic: CBUUID = CBUUID(string: "2A19")
+        let deviceNotifyingBatteryData = Data([50])
+        let deviceNotifyingBatteryData2 = Data([100])
+        let error = 0
+        
+        // Act
+        bleBasClient.processServiceData(characteristic, data: deviceNotifyingBatteryData, err: error)
+        bleBasClient.processServiceData(characteristic, data: deviceNotifyingBatteryData2, err: error)
+        let result = bleBasClient.getBatteryLevel()
+        
+        // Assert
+        XCTAssertEqual(result, Int(deviceNotifyingBatteryData2[0]))
+    }
+    
+    func testGetBatteryLevel_should_return_undefined_battery_percentage() throws {
+        
+        // Arrange
+        let characteristic: CBUUID = CBUUID(string: "91A2")
+        
+        // Act
+        bleBasClient.processServiceData(characteristic, data: Data(), err: 0)
+        let result = bleBasClient.getBatteryLevel()
+        
+        // Assert
+        XCTAssertEqual(result, -1)
+    }
+
+    func testGetChargerStatus_should_return_newest_charger_status() throws {
+
+        // Arrange
+        let characteristic: CBUUID = BleBasClient.BATTERY_STATUS_CHARACTERISTIC
+        let status = 0
+        let batteryStatusDataWiredConnected = Data([0x00, 0b10100011])
+
+        // Act
+        bleBasClient.processServiceData(characteristic, data: batteryStatusDataWiredConnected, err: status)
+        let result = bleBasClient.getChargeState()
+
+        // Assert
+        XCTAssertEqual(result, BleBasClient.ChargeState.charging)
+    }
+
+    func testGetChargerStatus_should_return_undefined_battery_percentage() throws {
+
+        // Arrange
+        let characteristic: CBUUID = CBUUID(string: "91A2")
+        let batteryStatusDataWiredConnected = Data([0x00, 0b10100011])
+        let status = 0
+
+        // Act
+        bleBasClient.processServiceData(characteristic, data: batteryStatusDataWiredConnected, err: status)
+        let result = bleBasClient.getChargeState()
+
+        // Assert
+        XCTAssertEqual(result, BleBasClient.ChargeState.unknown)
+    }
 }

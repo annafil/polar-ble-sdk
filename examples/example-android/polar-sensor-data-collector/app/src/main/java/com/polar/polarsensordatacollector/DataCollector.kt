@@ -320,6 +320,7 @@ class DataCollector(private val context: Context) {
                     logLine = logLine.plus(" ")
                     logLine = logLine.plus(status)
                 }
+                logLine = logLine.plus("\n")
                 stream.write(logLine)
             }
         }
@@ -539,7 +540,7 @@ class DataCollector(private val context: Context) {
     }
 
     @Throws(IOException::class)
-    fun marker(start: Boolean, deviceId: String, isStartMark: Boolean, timeStamp: Long = 0L) {
+    fun marker(deviceId: String, isStartMark: Boolean, timeStamp: Long = 0L) {
         val markerStamp = if (timeStamp == 0L) {
             latestTimeStamp
         } else {

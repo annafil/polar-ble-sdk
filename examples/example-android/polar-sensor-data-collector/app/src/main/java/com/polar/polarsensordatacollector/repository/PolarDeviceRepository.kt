@@ -105,6 +105,11 @@ data class OfflineRecTriggerStatus(
     val triggerStatus: PolarOfflineRecordingTrigger? = null
 )
 
+data class ChargeInformation(
+    val batteryLevel: Int = -1,
+    val chargerStatus: ChargeState = ChargeState.UNKNOWN
+)
+
 sealed class ResultOfRequest<out T> {
     data class Success<out T>(
         val value: T? = null,
@@ -165,6 +170,8 @@ class PolarDeviceRepository @Inject constructor(
 
     private val _deviceSupportsSettings: MutableStateFlow<Boolean> = MutableStateFlow(false)
     var deviceSupportsSettings: StateFlow<Boolean> = _deviceSupportsSettings.asStateFlow()
+
+    var chargeInfo = ChargeInformation()
 
     init {
         RxJavaPlugins.setErrorHandler { e ->
@@ -532,7 +539,7 @@ class PolarDeviceRepository @Inject constructor(
     }
 
     fun getDeviceName(deviceId: String): String? {
-        return api.fetchSession(deviceId)?.name
+        return api.getDeviceName(deviceId)
     }
 
     private fun updateOnlineStreamDataTypes(identifier: String, features: Set<PolarBleApi.PolarDeviceDataType>) {
@@ -692,6 +699,10 @@ class PolarDeviceRepository @Inject constructor(
                     Log.e(TAG, "SDK Mode LED animation change failed: $error")
                 }
             )
+    }
+
+    fun observeDeviceToHostNotifications(deviceId: String): Flowable<com.polar.sdk.api.PolarD2HNotificationData> {
+        return api.observeDeviceToHostNotifications(deviceId)
     }
 
     fun doFirmwareUpdate(deviceId: String, firmwareUrl: String = ""): Flowable<FirmwareUpdateStatus> {
@@ -1252,4 +1263,60 @@ class PolarDeviceRepository @Inject constructor(
         withContext(Dispatchers.IO) {
             api.setAutomaticOHRMeasurementEnabled(deviceId, enabled).await()
         }
+
+    suspend fun readFile(deviceId: String, filePath: String): ResultOfRequest<ByteArray> = withContext(Dispatchers.IO) {
+        return@withContext try {
+            val result = api.readFile(deviceId, filePath).awaitSingleOrNull()
+            ResultOfRequest.Success(result)
+        } catch (e: Exception) {
+            ResultOfRequest.Failure(e.message.toString(), e)
+        }
+    }
+
+    suspend fun listFiles(deviceId: String, filePath: String, deleteDeep: Boolean): ResultOfRequest<List<String>> = withContext(Dispatchers.IO) {
+        return@withContext try {
+            val result = api.getFileList(deviceId, filePath, deleteDeep).await()
+            ResultOfRequest.Success(result)
+        } catch (e: Exception) {
+            ResultOfRequest.Failure(e.message.toString(), e)
+        }
+    }
+
+    suspend fun writeFile(deviceId: String, filePath: String, fileData: Any) = withContext(Dispatchers.IO) {
+        return@withContext try {
+            val result = api.writeFile(deviceId, filePath, fileData as ByteArray).await()
+            ResultOfRequest.Success(result)
+        } catch (e: Exception) {
+            ResultOfRequest.Failure(e.message.toString(), e)
+        }
+    }
+
+    suspend fun deleteFile(deviceId: String, filePath: String) = withContext(Dispatchers.IO) {
+        return@withContext try {
+            val result = api.deleteFileOrDirectory(deviceId, filePath).await()
+            ResultOfRequest.Success(result)
+        } catch (e: Exception) {
+            ResultOfRequest.Failure(e.message.toString(), e)
+        }
+    }
+
+    suspend fun getChargeInformation(deviceId: String) = withContext(Dispatchers.IO) {
+        var batteryLevelInfo: Int
+        var chargerStatusInfo: ChargeState
+
+        return@withContext try {
+            chargerStatusInfo = api.getChargerState(deviceId).apply {
+                batteryLevelInfo = api.getBatteryLevel(deviceId)
+            }
+
+            chargeInfo = ChargeInformation(
+                batteryLevel = batteryLevelInfo,
+                chargerStatus = chargerStatusInfo
+            )
+
+            ResultOfRequest.Success(chargeInfo)
+        } catch (e: Exception) {
+            ResultOfRequest.Failure(e.message.toString(), e)
+        }
+    }
 }

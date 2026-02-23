@@ -26,7 +26,6 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ActivityRecordingViewModel @Inject constructor(
-    private val polarDeviceStreamingRepository: PolarDeviceRepository,
     private val state: SavedStateHandle,
 ) : ViewModel() {
     companion object {
@@ -40,8 +39,6 @@ class ActivityRecordingViewModel @Inject constructor(
     )
 
     sealed class ActivityUiState {
-        object IsFetching : ActivityUiState()
-        class FetchedData(val data: ActivityData) : ActivityUiState()
         class Failure(
             val message: String,
             val throwable: Throwable?
@@ -56,12 +53,6 @@ class ActivityRecordingViewModel @Inject constructor(
     private val _uiShowInfo: MutableStateFlow<MessageUiState> = MutableStateFlow(MessageUiState("", ""))
     val uiShowInfo: StateFlow<MessageUiState> = _uiShowInfo.asStateFlow()
 
-    private val _sleepLiveData = MutableLiveData<List<PolarSleepData>>()
-    private val _stepsLiveData = MutableLiveData<List<PolarStepsData>>()
-    private var activityUiState: ActivityUiState by mutableStateOf(ActivityUiState.IsFetching)
-    private val _caloriesLiveData = MutableLiveData<List<PolarCaloriesData>>()
-    private val _skinTemperatureLiveData = MutableLiveData<List<PolarSkinTemperatureData>>()
-
     private val compositeDisposable = CompositeDisposable()
 
     public override fun onCleared() {
@@ -72,19 +63,6 @@ class ActivityRecordingViewModel @Inject constructor(
     fun initView() {
         _uiShowInfo.update {
             MessageUiState("", null)
-        }
-    }
-
-    private fun showError(errorHeader: String, errorDescription: String = "") {
-        Log.e(TAG, " Error: $errorHeader ${if (errorDescription.isNotEmpty()) "Description: $errorDescription" else ""}")
-        _uiShowError.update {
-            MessageUiState(errorHeader, errorDescription)
-        }
-    }
-
-    private fun showInfo(header: String, description: String = "") {
-        _uiShowInfo.update {
-            MessageUiState(header, description)
         }
     }
 }

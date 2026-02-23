@@ -9,6 +9,7 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -62,60 +63,76 @@ fun AccGraphView(onClose: () -> Unit) {
 
     val (displayMin, displayMax) = calculateRange(xValues + yValues + zValues)
 
-    Box(
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
-            .background(GRAPH_BACKGROUND)
+            .background(GRAPH_BACKGROUND),
+        contentAlignment = Alignment.Center
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(HEADER_PADDING_DP.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                val latest = samples.lastOrNull()
 
-                Column {
-                    Text(
-                        text = stringResource(
-                            R.string.acc_value,
-                            latest?.x?.toString() ?: "--",
-                            latest?.y?.toString() ?: "--",
-                            latest?.z?.toString() ?: "--"
-                        ),
-                        color = TEXT_COLOR,
-                        fontSize = 20.sp
-                    )
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        LegendDot(ACC_X_COLOR, "X")
-                        LegendDot(ACC_Y_COLOR, "Y")
-                        LegendDot(ACC_Z_COLOR, "Z")
+        val width = maxWidth
+        val height = maxHeight
+
+        Box(
+            modifier = Modifier
+                .requiredSize(
+                    width = height,
+                    height = width
+                )
+                .rotate(90f)
+        ) {
+
+            Column(modifier = Modifier.fillMaxSize()) {
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(HEADER_PADDING_DP.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    val latest = samples.lastOrNull()
+
+                    Column {
+                        Text(
+                            text = stringResource(
+                                R.string.acc_value,
+                                latest?.x?.toString() ?: "--",
+                                latest?.y?.toString() ?: "--",
+                                latest?.z?.toString() ?: "--"
+                            ),
+                            color = TEXT_COLOR,
+                            fontSize = 20.sp
+                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            LegendDot(ACC_X_COLOR, "X")
+                            LegendDot(ACC_Y_COLOR, "Y")
+                            LegendDot(ACC_Z_COLOR, "Z")
+                        }
+                    }
+
+                    Button(
+                        onClick = onClose,
+                        colors = ButtonDefaults.buttonColors(
+                            backgroundColor = BUTTON_RED,
+                            contentColor = TEXT_COLOR
+                        )
+                    ) {
+                        Text(stringResource(R.string.close))
                     }
                 }
 
-                Button(
-                    onClick = onClose,
-                    colors = ButtonDefaults.buttonColors(
-                        backgroundColor = BUTTON_RED,
-                        contentColor = TEXT_COLOR
-                    )
-                ) {
-                    Text(stringResource(R.string.close))
-                }
+                AccPlotterCanvas(
+                    xValues = xValues,
+                    yValues = yValues,
+                    zValues = zValues,
+                    displayMin = displayMin,
+                    displayMax = displayMax,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(GRAPH_PADDING_DP.dp)
+                )
             }
-
-            AccPlotterCanvas(
-                xValues = xValues,
-                yValues = yValues,
-                zValues = zValues,
-                displayMin = displayMin,
-                displayMax = displayMax,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(GRAPH_PADDING_DP.dp)
-            )
         }
     }
 }

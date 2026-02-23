@@ -9,6 +9,7 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -70,45 +71,64 @@ fun HrGraphView(
         calculateDisplayRange(hrValues)
     }
 
-    Box(
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
-            .background(GRAPH_BACKGROUND)
+            .background(GRAPH_BACKGROUND),
+        contentAlignment = Alignment.Center
     ) {
-        Column(
-            modifier = Modifier.fillMaxSize()
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(HEADER_PADDING_DP.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = stringResource(R.string.hr_value, hrState.currentHr.toString()),
-                    color = TEXT_COLOR,
-                    fontSize = HR_TEXT_SIZE_SP.sp
-                )
-                Button(
-                    onClick = onClose,
-                    colors = ButtonDefaults.buttonColors(
-                        backgroundColor = BUTTON_RED,
-                        contentColor = TEXT_COLOR
-                    )
-                ) {
-                    Text(stringResource(R.string.close))
-                }
-            }
 
-            HrPlotterCanvas(
-                hrValues = hrValues,
-                displayMinHr = displayMinHr,
-                displayMaxHr = displayMaxHr,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(GRAPH_PADDING_DP.dp)
-            )
+        val width = maxWidth
+        val height = maxHeight
+
+        Box(
+            modifier = Modifier
+                .requiredSize(
+                    width = height,
+                    height = width
+                )
+                .rotate(90f)
+        ) {
+
+            Column(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(HEADER_PADDING_DP.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = stringResource(
+                            R.string.hr_value,
+                            hrState.currentHr.toString()
+                        ),
+                        color = TEXT_COLOR,
+                        fontSize = HR_TEXT_SIZE_SP.sp
+                    )
+
+                    Button(
+                        onClick = onClose,
+                        colors = ButtonDefaults.buttonColors(
+                            backgroundColor = BUTTON_RED,
+                            contentColor = TEXT_COLOR
+                        )
+                    ) {
+                        Text(stringResource(R.string.close))
+                    }
+                }
+
+                HrPlotterCanvas(
+                    hrValues = hrValues,
+                    displayMinHr = displayMinHr,
+                    displayMaxHr = displayMaxHr,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(GRAPH_PADDING_DP.dp)
+                )
+            }
         }
     }
 }

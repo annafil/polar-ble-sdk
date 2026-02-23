@@ -13,38 +13,6 @@ import CoreBluetooth
 
 @testable import PolarBleSdk
 
-class PolarBleApiImplWithMockSession: PolarBleApiImpl {
-    required init(_ queue: DispatchQueue, features: Set<PolarBleSdkFeature>) {
-        fatalError("init(_:features:) has not been implemented")
-    }
-    
-    init(mockDeviceSession: MockBleDeviceSession) {
-        self.mockDeviceSession = mockDeviceSession
-        super.init(DispatchQueue(label: "test"), features: [])
-    }
-    let mockDeviceSession: MockBleDeviceSession
-    override func sessionFtpClientReady(_ identifier: String) throws -> BleDeviceSession {
-        return mockDeviceSession
-    }
-}
-
-class MockAdvertisementContent: BleAdvertisementContent {
-    override var polarDeviceType: String {
-        return "360"
-    }
-}
-
-class MockBleDeviceSession: BleDeviceSession {
-    init(mockFtpClient: MockBlePsFtpClient) {
-        self.mockFtpClient = mockFtpClient
-        super.init(UUID(), advertisementContent: MockAdvertisementContent())
-    }
-    let mockFtpClient: MockBlePsFtpClient
-    public override func fetchGattClient(_ serviceUuid: CBUUID) -> BleGattClientBase? {
-        return mockFtpClient
-    }
-}
-
 final class PolarOfflineRecordingApiTests: XCTestCase {
     
     var mockClient: MockBlePsFtpClient!

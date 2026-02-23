@@ -7,6 +7,7 @@ import com.polar.androidcommunications.common.ble.AtomicSet
 import com.polar.androidcommunications.common.ble.RxUtils
 import io.reactivex.rxjava3.core.Flowable
 import io.reactivex.rxjava3.core.FlowableEmitter
+import io.reactivex.rxjava3.core.Single
 import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -31,6 +32,18 @@ data class PowerSourcesState(
     val wirelessExternalPowerConnected: PowerSourceState
 )
 
+    private fun parseBatteryStatus(data: ByteArray): ChargeState {
+        return when (val chargeStateValue = (data[1].toInt() and 0x60) shr 5) {
+            1 -> ChargeState.CHARGING
+            2 -> ChargeState.DISCHARGING_ACTIVE
+            3 -> ChargeState.DISCHARGING_INACTIVE
+            else -> {
+                BleLogger.e(TAG, "Unknown charge state value: $chargeStateValue")
+                ChargeState.UNKNOWN
+            }
+        }
+    }
+
 class BleBattClient(txInterface: BleGattTxInterface?) : BleGattBase(txInterface, BATTERY_SERVICE) {
     private val batteryStatusObservers = AtomicSet<FlowableEmitter<in Int>>()
     private val cachedBatteryPercentage = AtomicInteger(UNDEFINED_BATTERY_PERCENTAGE)
@@ -46,9 +59,9 @@ class BleBattClient(txInterface: BleGattTxInterface?) : BleGattBase(txInterface,
         @JvmField
         val BATTERY_SERVICE: UUID = UUID.fromString("0000180f-0000-1000-8000-00805f9b34fb")
         val BATTERY_LEVEL_CHARACTERISTIC: UUID =
-                UUID.fromString("00002a19-0000-1000-8000-00805f9b34fb")
+            UUID.fromString("00002a19-0000-1000-8000-00805f9b34fb")
         val BATTERY_LEVEL_STATUS_CHARACTERISTIC: UUID =
-                UUID.fromString("00002bed-0000-1000-8000-00805f9b34fb")
+            UUID.fromString("00002bed-0000-1000-8000-00805f9b34fb")
     }
 
     init {
@@ -126,7 +139,7 @@ class BleBattClient(txInterface: BleGattTxInterface?) : BleGattBase(txInterface,
      */
     fun monitorChargingStatus(checkConnection: Boolean): Flowable<ChargeState> {
         return RxUtils.monitorNotifications(batteryChargeStateObservers, txInterface, checkConnection)
-                .startWith(Flowable.just(cachedChargeState))
+            .startWith(Flowable.just(cachedChargeState))
     }
 
     /**
@@ -142,16 +155,24 @@ class BleBattClient(txInterface: BleGattTxInterface?) : BleGattBase(txInterface,
             .startWith(Flowable.just(cachedPowerSourcesState))
     }
 
-    private fun parseBatteryStatus(data: ByteArray): ChargeState {
-        return when (val chargeStateValue = (data[1].toInt() and 0x60) shr 5) {
-            1 -> ChargeState.CHARGING
-            2 -> ChargeState.DISCHARGING_ACTIVE
-            3 -> ChargeState.DISCHARGING_INACTIVE
-            else -> {
-                BleLogger.e(TAG, "Unknown charge state value: $chargeStateValue")
-                ChargeState.UNKNOWN
-            }
-        }
+    /**
+     * Get last observed battery status on connected device
+     * Requires BLE BAS v1.1
+     *
+     * @return Returns the last known battery level as a percentage from 0% to 100% or -1 if value is not set
+     */
+    fun getBatteryLevel(): Int {
+        return cachedBatteryPercentage.get()
+    }
+
+    /**
+     * Get last observed charge status on connected device
+     * Requires BLE BAS v1.1
+     *
+     * @return Returns the last known charge status as [ChargeState]
+     */
+    fun getChargerStatus(): ChargeState {
+        return cachedChargeState
     }
 
     private fun isValidBatteryPercentage(batteryPercentage: Int): Boolean {

@@ -705,7 +705,14 @@ public class BlePsFtpClient: BleGattClientBase {
     ///                    onCompleted, non produced unless stream is further configured
     ///                    onError, @see BlePsFtpException
     ///                             @see BleGattException
+    ///
     public func waitNotification() -> Observable<PsFtpNotification> {
+        return _sharedWaitNotification
+    }
+
+    private lazy var _sharedWaitNotification = self.waitNotificationInternal().share(replay: 0, scope: .whileConnected)
+    
+    private func waitNotificationInternal() -> Observable<PsFtpNotification> {
         return Observable.create{ observer in
             // allow only single wait notification observer at time
             let block = BlockOperation()

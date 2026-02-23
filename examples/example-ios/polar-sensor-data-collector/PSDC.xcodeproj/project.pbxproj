@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		482CAADA065AF442710A7800 /* Pods_PSDC.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3DD16CF04AD20FECFCA0114D /* Pods_PSDC.framework */; };
 		6C2EDE8922B9FE370031AA17 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 6C2EDE8822B9FE370031AA17 /* Assets.xcassets */; };
 		6C2EDE8C22B9FE370031AA17 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 6C2EDE8A22B9FE370031AA17 /* LaunchScreen.storyboard */; };
 		8415B05A2C2C38FB00AA4C9B /* FirmwareUpdateFeature.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8415B0592C2C38FB00AA4C9B /* FirmwareUpdateFeature.swift */; };
@@ -15,6 +16,7 @@
 		843A2B902F0E78C800F3B2EC /* HrGraphViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 843A2B8F2F0E78B200F3B2EC /* HrGraphViewController.swift */; };
 		8443CFAE2DD47953002AFBB9 /* UserDeviceSettingsFeature.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8443CFAD2DD47948002AFBB9 /* UserDeviceSettingsFeature.swift */; };
 		8446A2622F0E918F00141093 /* HrGraphViewWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8446A2612F0E918400141093 /* HrGraphViewWrapper.swift */; };
+		8446B9272F3A122200310FA0 /* polar_device_capabilities.json in Resources */ = {isa = PBXBuildFile; fileRef = 8446B9262F3A122200310FA0 /* polar_device_capabilities.json */; };
 		845358382F166ACB00FCA56F /* AccGraphView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 845358372F166AC600FCA56F /* AccGraphView.swift */; };
 		8453583A2F166AE800FCA56F /* AccGraphViewWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 845358392F166AE000FCA56F /* AccGraphViewWrapper.swift */; };
 		8453583C2F166B0600FCA56F /* AccGraphViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8453583B2F166AFF00FCA56F /* AccGraphViewController.swift */; };
@@ -86,7 +88,8 @@
 		AAE726462CB654A700007C6C /* DataDeletionSelections.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAE726452CB654A700007C6C /* DataDeletionSelections.swift */; };
 		AAE726482CB654D000007C6C /* DataDeletionFeature.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAE726472CB654D000007C6C /* DataDeletionFeature.swift */; };
 		AAFA1C6C2C97EB74004DC8C8 /* MenuStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAFA1C6B2C97EB74004DC8C8 /* MenuStyle.swift */; };
-		BEDB9EF625555CAD916169E9 /* Pods_PSDC.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 75E61F152F496A99F4257C7F /* Pods_PSDC.framework */; };
+		AAFD0B262F35C0C9009E833A /* GenericApiView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAFD0B252F35C0C3009E833A /* GenericApiView.swift */; };
+		AAFD0B282F35C146009E833A /* GenericApiUIState.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAFD0B272F35C13D009E833A /* GenericApiUIState.swift */; };
 		CC57B5DC2E60618900E90F5B /* ExerciseUIState.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC57B5DB2E60617F00E90F5B /* ExerciseUIState.swift */; };
 		CC57B5DE2E60619400E90F5B /* ExerciseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC57B5DD2E60618D00E90F5B /* ExerciseView.swift */; };
 /* End PBXBuildFile section */
@@ -105,19 +108,19 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		34353962155EF32F5E440FE6 /* Pods-PSDC.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PSDC.release.xcconfig"; path = "Target Support Files/Pods-PSDC/Pods-PSDC.release.xcconfig"; sourceTree = "<group>"; };
+		0BF6D5D0D8E23FA1C5C3A8CB /* Pods-PSDC.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PSDC.debug.xcconfig"; path = "Target Support Files/Pods-PSDC/Pods-PSDC.debug.xcconfig"; sourceTree = "<group>"; };
+		3DD16CF04AD20FECFCA0114D /* Pods_PSDC.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_PSDC.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		6C2EDE7E22B9FE360031AA17 /* PSDC.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PSDC.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		6C2EDE8822B9FE370031AA17 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		6C2EDE8B22B9FE370031AA17 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		6C2EDE8D22B9FE370031AA17 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		715294F1BBD29D04D81C64D1 /* Pods-PSDC.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PSDC.debug.xcconfig"; path = "Target Support Files/Pods-PSDC/Pods-PSDC.debug.xcconfig"; sourceTree = "<group>"; };
-		75E61F152F496A99F4257C7F /* Pods_PSDC.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_PSDC.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		8415B0592C2C38FB00AA4C9B /* FirmwareUpdateFeature.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirmwareUpdateFeature.swift; sourceTree = "<group>"; };
 		843A2B8B2F0E769B00F3B2EC /* HrDataHolder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HrDataHolder.swift; sourceTree = "<group>"; };
 		843A2B8D2F0E774C00F3B2EC /* HrGraphView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HrGraphView.swift; sourceTree = "<group>"; };
 		843A2B8F2F0E78B200F3B2EC /* HrGraphViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HrGraphViewController.swift; sourceTree = "<group>"; };
 		8443CFAD2DD47948002AFBB9 /* UserDeviceSettingsFeature.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserDeviceSettingsFeature.swift; sourceTree = "<group>"; };
 		8446A2612F0E918400141093 /* HrGraphViewWrapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HrGraphViewWrapper.swift; sourceTree = "<group>"; };
+		8446B9262F3A122200310FA0 /* polar_device_capabilities.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = polar_device_capabilities.json; sourceTree = "<group>"; };
 		845358372F166AC600FCA56F /* AccGraphView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccGraphView.swift; sourceTree = "<group>"; };
 		845358392F166AE000FCA56F /* AccGraphViewWrapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccGraphViewWrapper.swift; sourceTree = "<group>"; };
 		8453583B2F166AFF00FCA56F /* AccGraphViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccGraphViewController.swift; sourceTree = "<group>"; };
@@ -194,8 +197,11 @@
 		AAE726452CB654A700007C6C /* DataDeletionSelections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataDeletionSelections.swift; sourceTree = "<group>"; };
 		AAE726472CB654D000007C6C /* DataDeletionFeature.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataDeletionFeature.swift; sourceTree = "<group>"; };
 		AAFA1C6B2C97EB74004DC8C8 /* MenuStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuStyle.swift; sourceTree = "<group>"; };
+		AAFD0B252F35C0C3009E833A /* GenericApiView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenericApiView.swift; sourceTree = "<group>"; };
+		AAFD0B272F35C13D009E833A /* GenericApiUIState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenericApiUIState.swift; sourceTree = "<group>"; };
 		CC57B5DB2E60617F00E90F5B /* ExerciseUIState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseUIState.swift; sourceTree = "<group>"; };
 		CC57B5DD2E60618D00E90F5B /* ExerciseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseView.swift; sourceTree = "<group>"; };
+		EB604408B4225FE7ECC74193 /* Pods-PSDC.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PSDC.release.xcconfig"; path = "Target Support Files/Pods-PSDC/Pods-PSDC.release.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -203,7 +209,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				BEDB9EF625555CAD916169E9 /* Pods_PSDC.framework in Frameworks */,
+				482CAADA065AF442710A7800 /* Pods_PSDC.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -231,6 +237,7 @@
 		6C2EDE8022B9FE360031AA17 /* PSDC */ = {
 			isa = PBXGroup;
 			children = (
+				8446B9262F3A122200310FA0 /* polar_device_capabilities.json */,
 				AA74C2222BDA39D6005E0908 /* PolarBleSdkManager.swift */,
 				9537D58A2CFF06D900B6A1E6 /* PolarBleDeviceManager.swift */,
 				AA74C25D2BDA3F77005E0908 /* PSDCApp.swift */,
@@ -251,7 +258,7 @@
 				AA7C73292BC4F871006C0645 /* Alamofire.framework */,
 				A588B0DE25B81B7D00F6D7A3 /* RxSwift.xcframework */,
 				A588B0DB25B81B7800F6D7A3 /* PolarBleSdk.xcframework */,
-				75E61F152F496A99F4257C7F /* Pods_PSDC.framework */,
+				3DD16CF04AD20FECFCA0114D /* Pods_PSDC.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -259,8 +266,8 @@
 		6F9B5877CFCD0DFD62DE31CA /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				715294F1BBD29D04D81C64D1 /* Pods-PSDC.debug.xcconfig */,
-				34353962155EF32F5E440FE6 /* Pods-PSDC.release.xcconfig */,
+				0BF6D5D0D8E23FA1C5C3A8CB /* Pods-PSDC.debug.xcconfig */,
+				EB604408B4225FE7ECC74193 /* Pods-PSDC.release.xcconfig */,
 			);
 			path = Pods;
 			sourceTree = "<group>";
@@ -371,6 +378,7 @@
 		AA74C2442BDA3D6D005E0908 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				AAFD0B242F35C099009E833A /* GenericApi */,
 				843A2B8A2F0E767F00F3B2EC /* Graph */,
 				849400052ECC96990093A8C8 /* HrBroadcast */,
 				84954BAC2E9E65C2000A5C0A /* DataLoadProgressView.swift */,
@@ -450,6 +458,15 @@
 			path = H10Exercise;
 			sourceTree = "<group>";
 		};
+		AAFD0B242F35C099009E833A /* GenericApi */ = {
+			isa = PBXGroup;
+			children = (
+				AAFD0B272F35C13D009E833A /* GenericApiUIState.swift */,
+				AAFD0B252F35C0C3009E833A /* GenericApiView.swift */,
+			);
+			path = GenericApi;
+			sourceTree = "<group>";
+		};
 		CC57B5DA2E60617000E90F5B /* ExerciseSession */ = {
 			isa = PBXGroup;
 			children = (
@@ -466,13 +483,13 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 6C2EDE9022B9FE370031AA17 /* Build configuration list for PBXNativeTarget "PSDC" */;
 			buildPhases = (
-				29395EF02EFE46EE7368FBE0 /* [CP] Check Pods Manifest.lock */,
+				4DE366E9271E96F55245073E /* [CP] Check Pods Manifest.lock */,
 				9517B91A2E3A03E10079D6FA /* ShellScript */,
 				6C2EDE7A22B9FE360031AA17 /* Sources */,
 				6C2EDE7B22B9FE360031AA17 /* Frameworks */,
 				6C2EDE7C22B9FE360031AA17 /* Resources */,
 				A5560E23256400EF00C3F75D /* Embed Frameworks */,
-				72DFD238D0968388961DFBCC /* [CP] Embed Pods Frameworks */,
+				9177D42479B630B04EB93E1C /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -527,6 +544,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8446B9272F3A122200310FA0 /* polar_device_capabilities.json in Resources */,
 				6C2EDE8C22B9FE370031AA17 /* LaunchScreen.storyboard in Resources */,
 				8499A2DC2E01576D006FD70A /* Localizable.strings in Resources */,
 				6C2EDE8922B9FE370031AA17 /* Assets.xcassets in Resources */,
@@ -536,7 +554,7 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		29395EF02EFE46EE7368FBE0 /* [CP] Check Pods Manifest.lock */ = {
+		4DE366E9271E96F55245073E /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -558,7 +576,7 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
-		72DFD238D0968388961DFBCC /* [CP] Embed Pods Frameworks */ = {
+		9177D42479B630B04EB93E1C /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -566,13 +584,9 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-PSDC/Pods-PSDC-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
-			inputPaths = (
-			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-PSDC/Pods-PSDC-frameworks-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -621,6 +635,7 @@
 				AA74C2492BDA3DAF005E0908 /* DeviceSearchRow.swift in Sources */,
 				9537D58B2CFF06E200B6A1E6 /* PolarBleDeviceManager.swift in Sources */,
 				AA74C22E2BDA3BC4005E0908 /* OfflineRecordingFeature.swift in Sources */,
+				AAFD0B262F35C0C9009E833A /* GenericApiView.swift in Sources */,
 				AA74C2472BDA3DA2005E0908 /* DeviceSearchView.swift in Sources */,
 				AA74C2262BDA3A49005E0908 /* DeviceConnectionState.swift in Sources */,
 				CC57B5DE2E60619400E90F5B /* ExerciseView.swift in Sources */,
@@ -642,6 +657,7 @@
 				AAE726482CB654D000007C6C /* DataDeletionFeature.swift in Sources */,
 				AABC2A3F2C85BABB00BFC6BD /* PressureRecordingFeature.swift in Sources */,
 				AAC9FCA02DCCAEB200CFA655 /* UserDeviceSettingsView.swift in Sources */,
+				AAFD0B282F35C146009E833A /* GenericApiUIState.swift in Sources */,
 				AA74C24C2BDA3DE6005E0908 /* DevicesettingsView.swift in Sources */,
 				AA74C2432BDA3D45005E0908 /* ButtonStyle.swift in Sources */,
 				AA74C2232BDA39D6005E0908 /* PolarBleSdkManager.swift in Sources */,
@@ -832,7 +848,7 @@
 		};
 		6C2EDE9122B9FE370031AA17 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 715294F1BBD29D04D81C64D1 /* Pods-PSDC.debug.xcconfig */;
+			baseConfigurationReference = 0BF6D5D0D8E23FA1C5C3A8CB /* Pods-PSDC.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = PSDC/PSDC.entitlements;
@@ -866,7 +882,7 @@
 		};
 		6C2EDE9222B9FE370031AA17 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 34353962155EF32F5E440FE6 /* Pods-PSDC.release.xcconfig */;
+			baseConfigurationReference = EB604408B4225FE7ECC74193 /* Pods-PSDC.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = PSDC/PSDC.entitlements;

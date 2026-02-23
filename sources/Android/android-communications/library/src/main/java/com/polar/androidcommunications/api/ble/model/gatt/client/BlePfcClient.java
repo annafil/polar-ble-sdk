@@ -3,6 +3,7 @@ package com.polar.androidcommunications.api.ble.model.gatt.client;
 import android.util.Pair;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.VisibleForTesting;
 
 import com.polar.androidcommunications.api.ble.BleLogger;
 import com.polar.androidcommunications.api.ble.exceptions.BleAttributeError;
@@ -42,9 +43,10 @@ public class BlePfcClient extends BleGattBase {
     public static final UUID PFC_FEATURE = UUID.fromString("6217FF4C-C8EC-B1FB-1380-3AD986708E2D");
     public static final UUID PFC_CP = UUID.fromString("6217FF4D-91BB-91D0-7E2A-7CD3BDA8A1F3");
 
+    @VisibleForTesting
+    public final LinkedBlockingQueue<Pair<byte[], Integer>> pfcCpInputQueue = new LinkedBlockingQueue<>();
     private PfcFeature pfcFeature = null;
     private final Object mutexFeature = new Object();
-    private final LinkedBlockingQueue<Pair<byte[], Integer>> pfcCpInputQueue = new LinkedBlockingQueue<>();
     private final Scheduler scheduler = Schedulers.newThread();
     private final AtomicInteger pfcCpEnabled;
     private final Object pfcMutex = new Object();
@@ -61,7 +63,10 @@ public class BlePfcClient extends BleGattBase {
         PFC_CONFIGURE_MULTI_CONNECTION_SETTING(8),
         PFC_REQUEST_MULTI_CONNECTION_SETTING(9),
         PFC_CONFIGURE_ANT_PLUS_SETTING(10),
-        PFC_REQUEST_ANT_PLUS_SETTING(11);
+        PFC_REQUEST_ANT_PLUS_SETTING(11),
+        PFC_REQUEST_SECURITY_MODE(12),
+        PFC_CONFIGURE_SENSOR_INITIATED_SECURITY_MODE(14),
+        PFC_REQUEST_SENSOR_INITIATED_SECURITY_MODE(15);
 
         private final int numVal;
 
@@ -85,12 +90,21 @@ public class BlePfcClient extends BleGattBase {
 
         public PfcResponse(byte[] data) {
             responseCode = data[0];
-            opCode = PfcMessage.values()[data[1]];
+            opCode = mapOpCode(data[1]);
             status = data[2];
             if (data.length > 3) {
                 payload = new byte[data.length - 3];
                 System.arraycopy(data, 3, payload, 0, data.length - 3);
             }
+        }
+
+        private PfcMessage mapOpCode(final int value) {
+            for (final PfcMessage m : PfcMessage.values()) {
+                if (m.getNumVal() == value) {
+                    return m;
+                }
+            }
+            return PfcMessage.PFC_UNKNOWN;
         }
 
         public byte getResponseCode() {
@@ -132,11 +146,12 @@ public class BlePfcClient extends BleGattBase {
         public boolean bleModeConfigureSupported;
         public boolean multiConnectionSupported;
         public boolean antSupported;
+        public boolean securityModeSupported;
 
         public PfcFeature() {
         }
 
-        PfcFeature(byte[] data) {
+        public PfcFeature(byte[] data) {
             broadcastSupported = (data[0] & 0x01) == 1;
             khzSupported = ((data[0] & 0x02) >> 1) == 1;
             otaUpdateSupported = ((data[0] & 0x04) >> 2) == 1;
@@ -144,9 +159,10 @@ public class BlePfcClient extends BleGattBase {
             bleModeConfigureSupported = ((data[0] & 0x40) >> 6) == 1;
             multiConnectionSupported = ((data[0] & 0x80) >> 7) == 1;
             antSupported = (data[1] & 0x01) == 1;
+            securityModeSupported = ((data[1] & 0x02) >> 1) == 1;
         }
 
-        PfcFeature(PfcFeature clone) {
+        public PfcFeature(PfcFeature clone) {
             this.broadcastSupported = clone.broadcastSupported;
             this.khzSupported = clone.khzSupported;
             this.otaUpdateSupported = clone.otaUpdateSupported;
@@ -154,6 +170,7 @@ public class BlePfcClient extends BleGattBase {
             this.bleModeConfigureSupported = clone.bleModeConfigureSupported;
             this.multiConnectionSupported = clone.multiConnectionSupported;
             this.antSupported = clone.antSupported;
+            this.securityModeSupported = clone.securityModeSupported;
         }
     }
 
@@ -247,9 +264,10 @@ public class BlePfcClient extends BleGattBase {
                             case PFC_CONFIGURE_BLE_MODE:
                             case PFC_CONFIGURE_WHISPER_MODE:
                             case PFC_CONFIGURE_BROADCAST:
-                            case PFC_CONFIGURE_5KHZ: {
+                            case PFC_CONFIGURE_5KHZ:
+                            case PFC_CONFIGURE_SENSOR_INITIATED_SECURITY_MODE: {
                                 ByteBuffer bb = ByteBuffer.allocate(1 + params.length);
-                                bb.put(new byte[]{(byte) command.getNumVal()});
+                                bb.put((byte) command.getNumVal());
                                 bb.put(params);
                                 emitter.onSuccess(sendPfcCommandAndProcessResponse(bb.array()));
                                 return;
@@ -258,7 +276,9 @@ public class BlePfcClient extends BleGattBase {
                             case PFC_REQUEST_ANT_PLUS_SETTING:
                             case PFC_REQUEST_WHISPER_MODE:
                             case PFC_REQUEST_BROADCAST_SETTING:
-                            case PFC_REQUEST_5KHZ_SETTING: {
+                            case PFC_REQUEST_5KHZ_SETTING:
+                            case PFC_REQUEST_SECURITY_MODE:
+                            case PFC_REQUEST_SENSOR_INITIATED_SECURITY_MODE: {
                                 byte[] packet = new byte[]{(byte) command.getNumVal()};
                                 emitter.onSuccess(sendPfcCommandAndProcessResponse(packet));
                                 return;

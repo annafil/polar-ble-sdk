@@ -2,6 +2,7 @@ package com.polar.polarsensordatacollector.ui.activity
 
 import android.net.Uri
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -70,6 +71,7 @@ class ActivityRecordingDataViewModel @Inject constructor(
     private val endDate = state.get<String>("activityEndDateFragmentArgument") ?: throw Exception("ActivityRecordingDataViewModel model requires end date")
     private val caloriesTypeString = state.get<String>("caloriesTypeArgument") ?: "ACTIVITY"
     private val caloriesType = CaloriesType.valueOf(caloriesTypeString)
+    var elapsedTime = 0L
 
     var activityDataUiState: ActivityDataUiState by mutableStateOf(ActivityDataUiState.IsFetching)
         private set
@@ -113,7 +115,7 @@ class ActivityRecordingDataViewModel @Inject constructor(
     ) {
         Log.d(TAG, "fetchRecording $deviceId and type $activityRecordingType")
         viewModelScope.launch(Dispatchers.IO) {
-
+            val startTime = System.currentTimeMillis()
             when (activityRecordingType) {
                 PolarBleApi.PolarActivityDataType.SLEEP ->
                     when (val sleepRecording = polarDeviceStreamingRepository.getSleepData(deviceId, startDate, endDate)) {
@@ -403,9 +405,9 @@ class ActivityRecordingDataViewModel @Inject constructor(
                             activityDataUiState = ActivityDataUiState.Failure(dailySummaryData.message, dailySummaryData.throwable)
                         }
                     }
-
                 else -> { Log.d(TAG, "fetchRecording not implemented for $activityRecordingType") }
             }
+            elapsedTime = System.currentTimeMillis() - startTime
         }
     }
 

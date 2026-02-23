@@ -162,6 +162,27 @@
       "warning": "undocumented"
     },
     {
+      "file": "/Users/rkangast/repos/ios-communications/Sources/PolarBleSdk/sdk/api/PolarBleLowLevelApi.swift",
+      "line": 6,
+      "symbol": "PolarBleLowLevelApi",
+      "symbol_kind": "source.lang.swift.decl.protocol",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/rkangast/repos/ios-communications/Sources/PolarBleSdk/sdk/api/PolarD2HNotificationsApi.swift",
+      "line": 4,
+      "symbol": "PolarDeviceToHostNotification",
+      "symbol_kind": "source.lang.swift.decl.enum",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/rkangast/repos/ios-communications/Sources/PolarBleSdk/sdk/api/PolarD2HNotificationsApi.swift",
+      "line": 130,
+      "symbol": "PolarD2HNotificationData.init(notificationType:parameters:parsedParameters:)",
+      "symbol_kind": "source.lang.swift.decl.function.method.instance",
+      "warning": "undocumented"
+    },
+    {
       "file": "/Users/rkangast/repos/ios-communications/Sources/PolarBleSdk/sdk/api/PolarFirmwareUpdateApi.swift",
       "line": 6,
       "symbol": "PolarFirmwareUpdateApi",
@@ -3404,7 +3425,7 @@
     },
     {
       "file": "/Users/rkangast/repos/ios-communications/Sources/PolarBleSdk/sdk/impl/PolarBleApiImpl.swift",
-      "line": 5289,
+      "line": 5069,
       "symbol": "PrimitiveSequence.asCompletable()",
       "symbol_kind": "source.lang.swift.decl.function.method.instance",
       "warning": "undocumented"
@@ -3469,6 +3490,13 @@
       "file": "/Users/rkangast/repos/ios-communications/Sources/PolarBleSdk/sdk/impl/utils/PolarUserDeviceSettingsUtils.swift",
       "line": 6,
       "symbol": "DEVICE_SETTINGS_FILE_PATH",
+      "symbol_kind": "source.lang.swift.decl.var.global",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/rkangast/repos/ios-communications/Sources/PolarBleSdk/sdk/impl/utils/PolarUserDeviceSettingsUtils.swift",
+      "line": 7,
+      "symbol": "SENSOR_SETTINGS_FILE_PATH",
       "symbol_kind": "source.lang.swift.decl.var.global",
       "warning": "undocumented"
     },

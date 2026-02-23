@@ -50,6 +50,9 @@
     <!-- Foreground service -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 
+    <!-- Allow external device capabilities configuration -->
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"/>
+
     <application
         android:name=".PsdcApp"
         android:allowBackup="true"
@@ -91,16 +94,11 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".ui.graph.HrGraphActivity"
-            android:screenOrientation="landscape"
-            android:theme="@style/Theme.AppCompat.NoActionBar"
-            android:exported="false" />
-        <activity
-            android:name=".ui.graph.AccGraphActivity"
-            android:screenOrientation="landscape"
-            android:theme="@style/Theme.AppCompat.NoActionBar"
-            android:exported="false" />
-
+            android:name=".ui.genericapi.GenericApiActivity"
+            android:exported="false"
+            android:foregroundServiceType="dataSync|connectedDevice"
+            android:label="@string/generic_api_title"
+            android:theme="@style/AppTheme"/>
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="com.polar.polarsensordatacollector.fileprovider"

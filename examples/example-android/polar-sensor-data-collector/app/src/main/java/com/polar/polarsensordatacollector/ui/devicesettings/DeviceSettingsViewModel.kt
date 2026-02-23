@@ -23,11 +23,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.util.*
 import javax.inject.Inject
 import android.content.Context
 import android.content.Intent
 import com.polar.polarsensordatacollector.R
+import com.polar.polarsensordatacollector.ui.genericapi.GenericApiActivity
 import com.polar.sdk.api.PolarBleApi
 import com.polar.sdk.api.model.PolarDiskSpaceData
 import com.polar.sdk.api.model.PolarPhysicalConfiguration
@@ -71,6 +71,10 @@ data class SleepRecordingState(
 
 data class SettingsSupportUiState(
     val support: Boolean?
+)
+
+data class DeviceToHostNotificationsUiState(
+    val isObserving: Boolean = false
 )
 
 @HiltViewModel
@@ -128,6 +132,9 @@ internal class DeviceSettingsViewModel @Inject constructor(
 
     private val _uiSettingsSupportUiState = MutableStateFlow(false)
     val uiSettingsSupportUiState: StateFlow<Boolean> = _uiSettingsSupportUiState.asStateFlow()
+
+    private val _uiDeviceToHostNotificationsState = MutableStateFlow(DeviceToHostNotificationsUiState())
+    val uiDeviceToHostNotificationsState: StateFlow<DeviceToHostNotificationsUiState> = _uiDeviceToHostNotificationsState.asStateFlow()
 
     private val compositeDisposable = CompositeDisposable()
 
@@ -215,6 +222,46 @@ internal class DeviceSettingsViewModel @Inject constructor(
         viewModelScope.launch {
             polarDeviceStreamingRepository.setPpiModeLedConfig(deviceId)
         }
+    }
+
+    fun toggleDeviceToHostNotifications() {
+        viewModelScope.launch {
+            if (_uiDeviceToHostNotificationsState.value.isObserving) {
+                stopDeviceToHostNotifications()
+            } else {
+                startDeviceToHostNotifications()
+            }
+        }
+    }
+
+    private fun startDeviceToHostNotifications() {
+        val disposable = polarDeviceStreamingRepository.observeDeviceToHostNotifications(deviceId)
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe(
+                { notification ->
+                    val message = "${notification.notificationType} with ${notification.parameters.size} bytes"
+                    showInfo("D2H Notification", message)
+                    Log.d(TAG, "Device to host notification received: $message, param: ${notification.parsedParameters}")
+                },
+                { error ->
+                    _uiDeviceToHostNotificationsState.update { it.copy(isObserving = false) }
+                    showError("D2H Notification failed", error.toString())
+                    Log.e(TAG, "Device to host notification observation failed: ${error.message}")
+                },
+                {
+                    _uiDeviceToHostNotificationsState.update { it.copy(isObserving = false) }
+                    Log.d(TAG, "Device to host notification observation completed")
+                }
+            )
+        compositeDisposable.add(disposable)
+        _uiDeviceToHostNotificationsState.update { it.copy(isObserving = true) }
+    }
+
+    private fun stopDeviceToHostNotifications() {
+        compositeDisposable.clear()
+        _uiDeviceToHostNotificationsState.update { it.copy(isObserving = false) }
+        Log.d(TAG, "Device to host notification observation stopped")
     }
 
     fun openPhysicalConfigActivity(context: Context) {
@@ -527,6 +574,25 @@ internal class DeviceSettingsViewModel @Inject constructor(
                         showInfo("Sleep recording successfully stopped.")
                     } ?: kotlin.run {
                         showError("Failed to stop sleep recording.")
+                    }
+                }
+                is ResultOfRequest.Failure -> {
+                    showError(result.message, result.throwable?.toString() ?: "")
+                }
+            }
+        }
+    }
+
+    fun getChargeState() = viewModelScope.launch {
+        withContext(Dispatchers.IO) {
+            when (val result = polarDeviceStreamingRepository.getChargeInformation(deviceId)) {
+                is ResultOfRequest.Success -> {
+                    result.value?.let {
+                        showInfo("Charger information:\n" +
+                                "${result.value.chargerStatus}\n" +
+                                "Battery level is ${result.value.batteryLevel} %")
+                    } ?: kotlin.run {
+                        showError("Failed to fetch charge information.")
                     }
                 }
                 is ResultOfRequest.Failure -> {

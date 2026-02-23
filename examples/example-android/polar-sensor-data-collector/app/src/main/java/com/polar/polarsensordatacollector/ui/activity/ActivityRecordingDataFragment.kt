@@ -7,6 +7,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
@@ -92,6 +93,7 @@ fun ShowActivityData(viewModel: ActivityRecordingDataViewModel = viewModel(), on
                 type = "plain/text"
                 putParcelableArrayListExtra(Intent.EXTRA_STREAM, arrayListOf(uiState.data.uri))
             }
+            showToast("Data fetched in ${viewModel.elapsedTime} ms", context)
             ShowData(
                 onShare = { context.startActivity(intent) },
                 uiState,
@@ -190,6 +192,11 @@ fun openDataTextView(context: Context, uri: Uri) {
     intent.putExtra("DATA_URI", uri.toString())
     intent.putExtra("TOAST_TEXT", context.getString(R.string.toast_data_viewer_failed))
     context.startActivity(intent)
+}
+
+private fun showToast(message: String, context: Context) {
+    val toast = Toast.makeText(context, message, Toast.LENGTH_SHORT)
+    toast.show()
 }
 
 @Composable

@@ -9,6 +9,7 @@ struct ActivityRecordingDetailsView: View {
     @State var showingShareSheet: Bool = false
     @State var showingContents: Bool = false
     @Binding var isPresented: Bool
+    @State private var toast: String? = nil
     
     private let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -109,14 +110,27 @@ struct ActivityRecordingDetailsView: View {
                                             }
                                         }
                                     }
-
                                     Spacer()
-
                                 }
                             }
                         }
                         .padding()
                     }
+                    .overlay(alignment: .bottom) {
+                        if bleSdkManager.elapsedTimeToast != nil {
+                            Text(bleSdkManager.elapsedTimeToast ?? "")
+                                .padding(.horizontal, 14).padding(.vertical, 10)
+                                .background(.ultraThinMaterial, in: Capsule())
+                                .transition(.opacity.combined(with: .move(edge: .bottom)))
+                                .padding(.bottom, 24)
+                                .onAppear {
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 10) {
+                                        withAnimation { bleSdkManager.elapsedTimeToast = nil }
+                                    }
+                                }
+                        }
+                    }
+                    .animation(.easeInOut, value: toast)
                 }
             }
 #if targetEnvironment(macCatalyst)

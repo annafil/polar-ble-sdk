@@ -21,8 +21,8 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.polar.polarsensordatacollector.DataCollector
 import com.polar.polarsensordatacollector.R
 import com.polar.polarsensordatacollector.service.OnlineStreamService
-import com.polar.polarsensordatacollector.ui.graph.AccGraphActivity
-import com.polar.polarsensordatacollector.ui.graph.HrGraphActivity
+import com.polar.polarsensordatacollector.ui.graph.AccGraphFragment
+import com.polar.polarsensordatacollector.ui.graph.HrGraphFragment
 import com.polar.polarsensordatacollector.ui.utils.DataViewer
 import com.polar.polarsensordatacollector.ui.utils.DialogUtility.showAllSettingsDialog
 import com.polar.polarsensordatacollector.ui.utils.showSnackBar
@@ -493,8 +493,13 @@ class OnlineRecFragment : Fragment(R.layout.fragment_online_rec) {
 
         if (outputFileUris.isNotEmpty()) {
             for (fileUri in outputFileUris) {
-                val dataType = PolarDeviceDataType.valueOf(fileUri.path?.split("/")?.get(2).toString())
-                setupOnlineRecShareButtons(dataType, makeVisible = true)
+                val dataTypeProspect = fileUri.path?.split("/")?.get(2).toString()
+                if (dataTypeProspect != "MARKER") {
+                    val dataType = PolarDeviceDataType.valueOf(dataTypeProspect)
+                    setupOnlineRecShareButtons(dataType, makeVisible = true)
+                } else {
+                    // Marker file, do not show in sharing options for marker file. Instead share with the other files when they are shared.
+                }
             }
         }
     }
@@ -1238,7 +1243,16 @@ class OnlineRecFragment : Fragment(R.layout.fragment_online_rec) {
                 openDataTextView(
                     requireContext(),
                     fileUri
-                )
+                ).apply {
+                    // Marker file is a special file that is created if users adds markers during streaming.
+                    val markerUri = getUriForMarkerFile()
+                    if (markerUri != null) {
+                        openDataTextView(
+                            requireContext(),
+                            markerUri
+                        )
+                    }
+                }
             }
         }
     }
@@ -1252,9 +1266,15 @@ class OnlineRecFragment : Fragment(R.layout.fragment_online_rec) {
         shareButton.setOnClickListener {
             if (outputFileUris.isNotEmpty()) {
                 val dataUri = getUriByDataType(feature)
+                // Marker file is a special file that is created if users adds markers during streaming.
+                val markerUri = getUriForMarkerFile()
+
                 if (dataUri != null) {
                     val uriArrWithOneUri = ArrayList<Uri>()
                     uriArrWithOneUri.add(dataUri)
+                    if (markerUri != null) {
+                        uriArrWithOneUri.add(markerUri)
+                    }
                     val intent = Intent().apply {
                         action = Intent.ACTION_SEND_MULTIPLE
                         putExtra(Intent.EXTRA_SUBJECT, "Stream data")
@@ -1306,13 +1326,36 @@ class OnlineRecFragment : Fragment(R.layout.fragment_online_rec) {
         return fileurisWithDateKey.entries.sortedWith(compareBy( { it.key})).reversed().first().value
     }
 
+    /**
+     * Finds the Uri for the MARKER file.
+     */
+    private fun getUriForMarkerFile(): Uri? {
+
+        var matchingFileUri = Uri.EMPTY
+        var fileurisWithDateKey = mutableMapOf<LocalDateTime, Uri>()
+        for (fileUri in outputFileUris) {
+            val streamType = DataCollector.StreamType.valueOf(fileUri.path?.split("/")?.get(2).toString())
+            if (streamType.name == "MARKER") {
+                matchingFileUri = fileUri
+            }
+        }
+
+        val dateString = matchingFileUri.path?.split("/")?.get(3).toString().split("_").get(1)
+        val dateInUri = LocalDateTime.parse(dateString, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+        fileurisWithDateKey.put(dateInUri, matchingFileUri)
+
+        if (fileurisWithDateKey.isEmpty()) {
+            return null
+        }
+
+        return fileurisWithDateKey.entries.sortedWith(compareBy( { it.key})).reversed().first().value
+    }
+
     private fun openHrGraph() {
-        val intent = Intent(requireContext(), HrGraphActivity::class.java)
-        startActivity(intent)
+        HrGraphFragment().show(parentFragmentManager, null)
     }
 
     private fun openAccGraph() {
-        val intent = Intent(requireContext(), AccGraphActivity::class.java)
-        startActivity(intent)
+        AccGraphFragment().show(parentFragmentManager, null)
     }
 }

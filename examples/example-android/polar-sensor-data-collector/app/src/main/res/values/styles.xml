@@ -108,4 +108,8 @@
     <item name="android:visibility">gone</item>
     </style>
 
+    <style name="Theme.GraphDialog" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="android:windowFullscreen">true</item>
+    </style>
+
 </resources>

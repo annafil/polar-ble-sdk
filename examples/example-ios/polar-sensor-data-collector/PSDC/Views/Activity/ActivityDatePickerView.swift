@@ -12,7 +12,7 @@ struct ActivityDatePickerView: View {
     
     @State private var dates: Set<DateComponents> = []
     @State private var startDate: DateComponents? = nil
-    @State private var endDate:DateComponents? = nil
+    @State private var endDate: DateComponents? = nil
 
     var selectedDates: Binding<Set<DateComponents>> {
         Binding {
@@ -55,29 +55,31 @@ struct ActivityDatePickerView: View {
                                 bleSdkManager.activityRecordingData.startDate = startDate
                                 bleSdkManager.activityRecordingData.endDate = endDate
                                 showActivityView = true
-                                switch bleSdkManager.activityRecordingData.activityType {
-                                case .SLEEP:
-                                    await bleSdkManager.getSleep(start: startDate, end:  endDate)
-                                case .STEPS:
-                                    await bleSdkManager.getSteps(start: startDate, end:  endDate)
-                                case .CALORIES:
-                                    await bleSdkManager.getCalories(start: startDate, end: endDate, caloriesType: bleSdkManager.activityRecordingData.caloriesType)
-                                case .HR_SAMPLES:
-                                    await bleSdkManager.get247HrSamples(start: startDate, end: endDate)
-                                case .NIGHTLY_RECHARGE:
-                                    await bleSdkManager.getNightlyRecharge(start: startDate, end: endDate)
-                                case .SKINTEMPERATURE:
-                                    await bleSdkManager.getSkinTemperature(start: startDate, end: endDate)
-                                case .PEAKTOPEAKINTERVAL:
-                                    await bleSdkManager.get247PPiSamples(start: startDate, end: endDate)
-                                case .ACTIVE_TIME:
-                                    await bleSdkManager.getActiveTimeData(start: startDate, end: endDate)
-                                case .ACTIVITY_SAMPLES:
-                                    await bleSdkManager.getActivitySamplesData(start: startDate, end: endDate)
-                                case .DAILY_SUMMARY:
-                                    await bleSdkManager.getDailySummaryData(start: startDate, end: endDate)
-                                case .NONE:
-                                    print("NOT IMPLEMENTED")
+                                await measureElapsedTime {
+                                    switch bleSdkManager.activityRecordingData.activityType {
+                                    case .SLEEP:
+                                        await bleSdkManager.getSleep(start: startDate, end:  endDate)
+                                    case .STEPS:
+                                        await bleSdkManager.getSteps(start: startDate, end:  endDate)
+                                    case .CALORIES:
+                                        await bleSdkManager.getCalories(start: startDate, end: endDate, caloriesType: bleSdkManager.activityRecordingData.caloriesType)
+                                    case .HR_SAMPLES:
+                                        await bleSdkManager.get247HrSamples(start: startDate, end: endDate)
+                                    case .NIGHTLY_RECHARGE:
+                                        await bleSdkManager.getNightlyRecharge(start: startDate, end: endDate)
+                                    case .SKINTEMPERATURE:
+                                        await bleSdkManager.getSkinTemperature(start: startDate, end: endDate)
+                                    case .PEAKTOPEAKINTERVAL:
+                                        await bleSdkManager.get247PPiSamples(start: startDate, end: endDate)
+                                    case .ACTIVE_TIME:
+                                        await bleSdkManager.getActiveTimeData(start: startDate, end: endDate)
+                                    case .ACTIVITY_SAMPLES:
+                                        await bleSdkManager.getActivitySamplesData(start: startDate, end: endDate)
+                                    case .DAILY_SUMMARY:
+                                        await bleSdkManager.getDailySummaryData(start: startDate, end: endDate)
+                                    case .NONE:
+                                        print("NOT IMPLEMENTED")
+                                    }
                                 }
                             } else {
                                 bleSdkManager.activityRecordingData.loadingState =  ActivityRecordingDataLoadingState.failed(error: "No date selected!")
@@ -102,6 +104,16 @@ struct ActivityDatePickerView: View {
         }
     }
     
+    private func measureElapsedTime(_ operation: () async -> Void) async {
+        let startTime = Date()
+        await operation()
+        let endTime = Date()
+        let elapsedTimeInMs = UInt(endTime.timeIntervalSince(startTime) * 1000)
+        await MainActor.run {
+            bleSdkManager.elapsedTimeToast = "Data fetched in \(elapsedTimeInMs) ms"
+        }
+    }
+
     private func fillDatesBetween(for startDate: DateComponents, for endDate: DateComponents) {
         let calendar = Calendar.current
         var currentDate = startDate

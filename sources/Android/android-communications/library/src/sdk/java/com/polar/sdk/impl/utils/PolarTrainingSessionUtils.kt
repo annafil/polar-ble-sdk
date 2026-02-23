@@ -46,10 +46,10 @@ internal object PolarTrainingSessionUtils {
         val references = mutableListOf<PolarTrainingSessionReference>()
         var trainingSessionSummaryPaths = hashSetOf<String>()
 
-        return fetchRecursively(
+        return PolarFileUtils.fetchRecursively(
             client = client,
             path = ARABICA_USER_ROOT_FOLDER,
-            condition = object : FetchRecursiveCondition {
+            condition = object : PolarFileUtils.FetchRecursiveCondition {
                 override fun include(name: String): Boolean {
                     return name.matches(Regex("^\\d{8}/$")) ||
                             name.matches(Regex("^\\d{6}/$")) ||
@@ -58,8 +58,8 @@ internal object PolarTrainingSessionUtils {
                             name.endsWith(".GZB") ||
                             name == "E/"
                 }
-            }
-        )
+            }, tag = TAG,
+            recurseDeep = true)
             .collectInto(references) { refs, (path, fileSize) ->
                 BleLogger.d(TAG, "path: $path, size: $fileSize bytes")
                 val dataType =
@@ -371,53 +371,5 @@ internal object PolarTrainingSessionUtils {
                 BleLogger.e(TAG, "Failed to delete: ${throwable.message}")
                 return@onErrorResumeNext Completable.error(throwable)
             }
-    }
-
-    private fun fetchRecursively(
-        client: BlePsFtpClient,
-        path: String,
-        condition: FetchRecursiveCondition
-    ): Flowable<Pair<String, Long>> {
-        BleLogger.d(TAG, "fetchRecursively: Starting fetch for path: $path")
-
-        val builder = PftpRequest.PbPFtpOperation.newBuilder()
-        builder.command = PftpRequest.PbPFtpOperation.Command.GET
-        builder.path = path
-
-        return client.request(builder.build().toByteArray())
-            .toFlowable()
-            .flatMap { byteArrayOutputStream ->
-
-                val dir = PftpResponse.PbPFtpDirectory.parseFrom(byteArrayOutputStream.toByteArray())
-                val entries = mutableMapOf<String, Long>()
-
-                for (entry in dir.entriesList) {
-                    BleLogger.d(TAG, "fetchRecursively: Found entry, name: ${entry.name}, size: ${entry.size}")
-                    if (condition.include(entry.name)) {
-                        entries[path + entry.name] = entry.size
-                    }
-                }
-
-                if (entries.isNotEmpty()) {
-                    return@flatMap Flowable.fromIterable(entries.toList())
-                        .flatMap { entry ->
-                            if (entry.first.endsWith("/")) {
-                                fetchRecursively(client, entry.first, condition)
-                            } else {
-                                Flowable.just(entry)
-                            }
-                        }
-                }
-
-                BleLogger.d(TAG, "fetchRecursively: No entries found for path: $path")
-                Flowable.empty()
-            }
-            .doOnError { error ->
-                BleLogger.e(TAG, "fetchRecursively: Error occurred for path: $path, error: $error")
-            }
-    }
-
-    interface FetchRecursiveCondition {
-        fun include(name: String): Boolean
     }
 }

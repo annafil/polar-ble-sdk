@@ -38,8 +38,9 @@ data class PolarUserDeviceSettings(val deviceLocation: Int? = null,
     }
 
     companion object {
-        infix fun from(value: Int): DeviceLocation? = DeviceLocation.values().firstOrNull {it.value == value}
+        infix fun from(value: Int): DeviceLocation? = DeviceLocation.entries.firstOrNull {it.value == value}
         const val DEVICE_SETTINGS_FILENAME = "/U/0/S/UDEVSET.BPB"
+        const val SENSOR_SETTINGS_FILENAME = "/UDEVSET.BPB"
     }
 
     fun toProto(): PbUserDeviceSettings {

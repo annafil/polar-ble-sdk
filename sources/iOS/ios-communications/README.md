@@ -4,7 +4,7 @@ The iOS Communications library provides three functionalities for communication 
  
 * **Functionality 1 - iOS Communications:** This is the base functionality of the communication library, which provides connection and communication with Polar devices and sensors over Bluetooth LE. It is used by many applications developed by Polar. The source code for this functionality can be found in `ios-communications/Sources/iOSCommunications/`.
 * **Functionality 2 - Polar BLE SDK:** This functionality provides connection and communication with Polar devices and sensors over Bluetooth LE for 3rd party developers. The functionality is achieved by wrapping the base iOS Communications library with an SDK layer. The source code for this functionality is located in the `ios-communications/Sources/PolarBleSdk/`.
-* **Functionality 3 - Polar BLE SDK PROPRIETARY:** The proprietary SDK is intended for internal development at Polar. It is separated into its own branch,  `feature/proprietary-polar-ble-sdk`. The proprietary SDK is useful for experimenting with future features that are not meant to be publicly available or for implementing features that are never intended to be made public.
+* **Functionality 3 - Polar BLE SDK PROPRIETARY:** The proprietary SDK is intended for internal development at Polar. It is separated into its own branch,  `sdk-proprietary`.
 
 iOS Communications XCode project (i.e. `iOSCommunications.xcworkspace`) contains three targets `iOSCommunications`, `PolarBleSdk` and `PolarBleSdkWatchOs`. `iOSCommunications` target implements the `Functionality 1`. The targets `PolarBleSdk` and `PolarBleSdkWatchOs` implements the `Functionality 2`, both targets dependents on `iOSCommunications` target.
 
@@ -18,13 +18,12 @@ iOS Communications XCode project (i.e. `iOSCommunications.xcworkspace`) contains
     * [... using git submodules](#...-using-git-submodules)
     * [... using Carthage](#...-using-Carthage)
 * [Usage](#usage)
-* [Releasing](#releasing)
 * [Debugging](#debugging)
 
 ## Environment Requirements
 
-* Xcode 13.2 +
-* Swift 5.x +
+* Xcode 15.0 +
+* Swift 5.9 +
 
 ## Dependencies
 * iOS Communications project is dependent on following libraries
@@ -43,7 +42,6 @@ iOS Communications XCode project (i.e. `iOSCommunications.xcworkspace`) contains
 * In your `Podfile` add
 ```
 source 'https://github.com/CocoaPods/Specs.git'
-source 'ssh://git@git.polar.grp:7999/cs/ios-podspecs.git'
 
 use_frameworks!
 
@@ -63,6 +61,7 @@ $ pod install
 * Copy generated XCFramework from `iOSCommunicationsBuild/`  or from `SdkBuild/` to your project
 
 ### ... using git submodules
+* `git submodule add <repository_url>`
 * Drag and drop the iOS communications project file (i.e. `iOSCommunications.xcodeproj`) to yours Xcode project Project Navigator
 *  In your project choose the `Target → General → Frameworks, Libraries and Embedded Content → Press "+"`. From opened dialog select the target `iOSCommunications`, `PolarBleSdk` or `PolarBleSdkWatchOs` depending on your needs.  
 

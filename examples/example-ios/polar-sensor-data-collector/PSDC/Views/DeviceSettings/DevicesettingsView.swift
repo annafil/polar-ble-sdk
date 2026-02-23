@@ -4,6 +4,7 @@ import Foundation
 import SwiftUI
 import PolarBleSdk
 import UniformTypeIdentifiers
+import UserNotifications
 
 struct DeviceSettingsView: View {
     @EnvironmentObject private var bleSdkManager: PolarBleSdkManager
@@ -15,6 +16,8 @@ struct DeviceSettingsView: View {
     @State private var isPpiModeLedAnimationEnabled = false
     @State private var isPerformingFirmwareUpdate = false
     @State private var isPerformingMultiBleStatusGet = false
+    @State private var isObservingDeviceToHostNotifications = false
+    @State private var showNotificationsAsAlerts = UserDefaults.standard.bool(forKey: "showUNNotificationsAsAlerts")
     
     @State private var showSettingsView = false
     @State private var showDatePickerView = false
@@ -34,13 +37,19 @@ struct DeviceSettingsView: View {
     @State private var showTelemetryDeleteAlert = false
     @State private var showPhysicalInfo = false
     @State private var physicalInfoMessage = ""
-
+    @State private var genericApiButtonClickCount = 0
+    @State private var showGenericApiButton = false
+    @State private var showGenericApiView = false
+    @State private var genericButtonColor = Color.clear
+    @State private var toast: String? = nil
+    @State private var bleSignalStrengthText: String = ""
+    
     var body: some View {
         VStack {
             if case .connected = bleSdkManager.deviceConnectionState {
                 ScrollView {
                     VStack {
-
+                        
                         HStack {
                             Text("Firmware version:")
                             if(bleSdkManager.deviceInfoFeature.isSupported) {
@@ -49,7 +58,7 @@ struct DeviceSettingsView: View {
                                 Text("-")
                             }
                         }
-
+                        
                         HStack {
                             Text("Battery level: ")
                             if bleSdkManager.batteryStatusFeature.isSupported {
@@ -59,7 +68,7 @@ struct DeviceSettingsView: View {
                                 Text("-")
                             }
                         }
-
+                        
                         HStack {
                             Text("Power sources: ")
                             if bleSdkManager.batteryStatusFeature.isSupported {
@@ -68,7 +77,7 @@ struct DeviceSettingsView: View {
                                 Text("-")
                             }
                         }
-
+                        
                         HStack {
                             Button(getFirmwareUpdateButtonText(),
                                    action: {
@@ -97,14 +106,14 @@ struct DeviceSettingsView: View {
                             }
                         }
                         .padding(.trailing)
-
+                        
                         HStack {
                             Text("Status:")
                             Text(bleSdkManager.firmwareUpdateFeature.status)
                                 .fontWeight(.bold)
                         }
                         .padding(.top, 8)
-
+                        
                         Button("Set time",
                                action: {
                             isPerformingTimeSet = true
@@ -154,7 +163,7 @@ struct DeviceSettingsView: View {
                                 }
                             }
                         }
-
+                        
                         if (bleSdkManager.deviceConnectionState.get().hasSAGRFCFileSystem) {
                             Button(bleSdkManager.sdkModeFeature.isEnabled ? "Disable SDK mode" : "Enable SDK mode",
                                    action: {
@@ -175,7 +184,7 @@ struct DeviceSettingsView: View {
                         await bleSdkManager.getSdkModeStatus()
                         isPerformingSdkModeStatusGet = false
                     }
-
+                    
                     Button(isSdkModeLedAnimationEnabled ? "Enable SDK mode LED animation" : "Disable SDK mode LED animation",
                            action: {
                         Task {
@@ -184,7 +193,7 @@ struct DeviceSettingsView: View {
                             isSdkModeLedAnimationEnabled = !isSdkModeLedAnimationEnabled
                         }
                     }).buttonStyle(SecondaryButtonStyle(buttonState: ButtonState.released))
-
+                    
                     Button(isPpiModeLedAnimationEnabled ? "Enable PPI mode LED animation" : "Disable PPI mode LED animation",
                            action: {
                         Task {
@@ -193,7 +202,23 @@ struct DeviceSettingsView: View {
                             isPpiModeLedAnimationEnabled = !isPpiModeLedAnimationEnabled
                         }
                     }).buttonStyle(SecondaryButtonStyle(buttonState: ButtonState.released))
-
+                    
+                    Button((bleSdkManager.deviceToHostNotificationDisposable != nil) ? "Stop observing device notifications" : "Start observing device notifications",
+                           action: {
+                        Task {
+                            bleSdkManager.toggleDeviceToHostNotificationObservation()
+                        }
+                    }).buttonStyle(SecondaryButtonStyle(buttonState: ButtonState.released))
+                        .padding(.bottom, 24)
+                    
+                    Toggle("iOS notifications as alerts", isOn: $showNotificationsAsAlerts)
+                        .padding(.horizontal, 40)
+                        .onChange(of: showNotificationsAsAlerts) { newValue in
+                            if let delegate = UNUserNotificationCenter.current().delegate as? NotificationCenterDelegate {
+                                delegate.showUNNotificationsAsAlerts = newValue
+                            }
+                        }
+                    
                     HStack {
                         Button("Do factory reset") {
                             showFactoryResetAlert = true
@@ -214,14 +239,14 @@ struct DeviceSettingsView: View {
                     .alert(errorMessage, isPresented: $showError) {
                         Button("OK", role: .cancel) {}
                     }
-
+                    
                     Button("Do restart",
                            action: {
                         Task {
                             await bleSdkManager.doRestart()
                         }
                     }).buttonStyle(SecondaryButtonStyle(buttonState: ButtonState.released))
-
+                    
                     if (bleSdkManager.deviceConnectionState.get().hasSAGRFCFileSystem) {
                         Button("Do physical data config") {
                             if bleSdkManager.checkIfDeviceIdSet() {
@@ -354,7 +379,7 @@ struct DeviceSettingsView: View {
                             }).buttonStyle(SecondaryButtonStyle(buttonState: ButtonState.released))
                         }
                     }
-
+                    
                     Button(bleSdkManager.multiBleFeature.isEnabled ? "Disable multi BLE mode" : "Enable multi BLE mode",
                            action: {
                         bleSdkManager.multiBLEModeToggle()
@@ -421,35 +446,33 @@ struct DeviceSettingsView: View {
                         }.padding(.bottom, 10)
                             .buttonStyle(SecondaryButtonStyle(buttonState: ButtonState.released))
                     }
-                    if (bleSdkManager.deviceConnectionState.get().hasSAGRFCFileSystem) {
-                        HStack {
-                            Button("Do user device settings config") {
-                                if bleSdkManager.checkIfDeviceIdSet() {
-                                    showUserDeviceSettingsConfig = true
-                                } else {
-                                    errorMessage = "No device ID available"
-                                    showError = true
-                                }
+                    HStack {
+                        Button("Do user device settings config") {
+                            if bleSdkManager.checkIfDeviceIdSet() {
+                                showUserDeviceSettingsConfig = true
+                            } else {
+                                errorMessage = "No device ID available"
+                                showError = true
                             }
-                            .sheet(isPresented: $showUserDeviceSettingsConfig) {
-                                if let deviceId = bleSdkManager.deviceId {
-                                    VStack {
-                                        UserDeviceSettingsView(deviceId: deviceId)
-                                            .environmentObject(bleSdkManager)
-#if targetEnvironment(macCatalyst)
-                                        Button("Close", action: {
-                                            showUserDeviceSettingsConfig = false
-                                        })
-                                        .padding(.bottom)
-                                        .padding(.top)
-#endif
-                                    }
-                                } else {
-                                    Text("No device ID available")
-                                }
-                            }
-                            .buttonStyle(SecondaryButtonStyle(buttonState: .released))
                         }
+                        .sheet(isPresented: $showUserDeviceSettingsConfig) {
+                            if let deviceId = bleSdkManager.deviceId {
+                                VStack {
+                                    UserDeviceSettingsView(deviceId: deviceId)
+                                        .environmentObject(bleSdkManager)
+#if targetEnvironment(macCatalyst)
+                                    Button("Close", action: {
+                                        showUserDeviceSettingsConfig = false
+                                    })
+                                    .padding(.bottom)
+                                    .padding(.top)
+#endif
+                                }
+                            } else {
+                                Text("No device ID available")
+                            }
+                        }
+                        .buttonStyle(SecondaryButtonStyle(buttonState: .released))
                     }
                     if (bleSdkManager.deviceConnectionState.get().hasSAGRFCFileSystem) {
                         HStack(spacing: 0) {
@@ -457,18 +480,119 @@ struct DeviceSettingsView: View {
                                 .font(.headline)
                                 .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
                                 .padding(.horizontal, 20)
-
+                            
                             Button("Wait") {
                                 bleSdkManager.waitForConnection()
                             }
                             .buttonStyle(SecondaryButtonStyle(buttonState: .released))
                             .padding(.horizontal, 8)
-
+                            
                             Text(bleSdkManager.deviceConnected ? "Connected" : "Not checked yet")
                                 .font(.headline)
                                 .padding(.trailing, 16)
                         }
                         .padding(.top, 10)
+                    }
+
+                    HStack(spacing: 0) {
+                        Text("Read battery charge level")
+                            .font(.headline)
+                            .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 20)
+                        
+                        Button("Get") {
+                            Task {
+                                try bleSdkManager.getBatteryChargeLevel()
+                                try bleSdkManager.getChargeStatus()
+                                toast = "\(bleSdkManager.deviceChargeStatus) Battery: \(bleSdkManager.batteryChargeLevel)%"
+                            }
+                        }
+                        .buttonStyle(SecondaryButtonStyle(buttonState: .released))
+                        .padding(.horizontal, 8)
+                    }
+                    .padding()
+                    .overlay(alignment: .bottom) {
+                        if let toast {
+                            Text(toast)
+                                .padding(.horizontal, 14).padding(.vertical, 10)
+                                .background(.ultraThinMaterial, in: Capsule())
+                                .transition(.opacity.combined(with: .move(edge: .bottom)))
+                                .padding(.bottom, 24)
+                                .lineLimit(3)
+                                .onAppear {
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                                        withAnimation { self.toast = nil }
+                                    }
+                                }
+                        }
+                    }
+
+                    HStack(spacing: 0) {
+                        Text("Get BLE signal strength")
+                            .font(.headline)
+                            .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 20)
+
+                        Button("Get") {
+                            bleSdkManager.checkIfDeviceDisconnectedDueToRemovedPairing()
+                            bleSdkManager.getRSSIValue()
+                            Task {
+                                if bleSdkManager.didDisconnect {
+                                    bleSignalStrengthText = "Device was disconnected due to removed pairing. Please reconnect the device."
+                                } else {
+                                    bleSignalStrengthText = "RSSI: \(bleSdkManager.rssi) dBm"
+                                }
+                            }
+                        }
+                        .buttonStyle(SecondaryButtonStyle(buttonState: .released))
+                        .padding(.horizontal, 8)
+
+                        Text(bleSignalStrengthText)
+                            .font(.headline)
+                            .padding(.trailing, 16)
+                    }
+                    .padding(.top, 10)
+
+                    if (bleSdkManager.deviceConnectionState.get().hasSAGRFCFileSystem) {
+                        
+                        Button(action: {
+                            if !bleSdkManager.checkIfDeviceIdSet() {
+                                errorMessage = "No device ID available"
+                                showError = true
+                            }
+                            
+                            if (genericApiButtonClickCount >= 8) {
+                                genericButtonColor = Color.red
+                                showGenericApiButton = true
+                            }
+                            if (genericApiButtonClickCount >= 9 ) {
+                                showGenericApiView = true
+                            }
+                            genericApiButtonClickCount+=1
+                        }) {
+                            Text("Experimental Low Level Api")
+                                .font(.headline)
+                                .foregroundColor(showGenericApiButton ? .red : .black.opacity(0))
+                                .padding()
+                                .frame(width: 300, height: 50)
+                                .background(showGenericApiButton ? Color.black.opacity(1) : Color.clear)
+                                .contentShape(RoundedRectangle(cornerRadius: 20))
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .padding(.horizontal, 8)
+                        .sheet(isPresented: $showGenericApiView) {
+                            VStack {
+                                GenericApiView().environmentObject(bleSdkManager)
+#if targetEnvironment(macCatalyst)
+                                Button("Close", action: {
+                                    showGenericApiView = false
+                                })
+                                .padding(.bottom)
+                                .padding(.top)
+#endif
+                            }
+                        }
+                        .buttonStyle(SecondaryButtonStyle(buttonState: .released))
                     }
                 }
             } else {

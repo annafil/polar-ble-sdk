@@ -229,6 +229,5 @@ class MainViewModel @Inject constructor(
         super.onCleared()
         Log.d(TAG, "ViewModel onCleared()")
         hrDisposable?.dispose()
-        polarDeviceStreamingRepository.sdkShutDown()
     }
 }

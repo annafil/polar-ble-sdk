@@ -17,7 +17,7 @@
     <a title="Protocols  Reference"></a>
     <header>
       <div class="content-wrapper">
-        <p><a href="index.html">PolarBleSdk 6.13.2 Docs</a> (35% documented)</p>
+        <p><a href="index.html">PolarBleSdk 6.14.3 Docs</a> (37% documented)</p>
         <div class="header-right">
           <form role="search" action="search.json">
             <input type="text" placeholder="Search documentation" data-typeahead>
@@ -140,6 +140,9 @@
                 <a href="Global%20Variables.html#/s:11PolarBleSdk25DEVICE_SETTINGS_FILE_PATHSSvp">DEVICE_SETTINGS_FILE_PATH</a>
               </li>
               <li class="nav-group-task">
+                <a href="Global%20Variables.html#/s:11PolarBleSdk25SENSOR_SETTINGS_FILE_PATHSSvp">SENSOR_SETTINGS_FILE_PATH</a>
+              </li>
+              <li class="nav-group-task">
                 <a href="Global%20Variables.html#/s:11PolarBleSdk17polarDailySummaryAA0aeF0VSgvp">polarDailySummary</a>
               </li>
             </ul>
@@ -170,6 +173,9 @@
               </li>
               <li class="nav-group-task">
                 <a href="Enums/PolarDeviceDataType.html">PolarDeviceDataType</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Enums/PolarDeviceToHostNotification.html">PolarDeviceToHostNotification</a>
               </li>
               <li class="nav-group-task">
                 <a href="Enums/PolarErrors.html">PolarErrors</a>
@@ -257,6 +263,12 @@
                 <a href="Protocols/PolarBleApiPowerStateObserver.html">PolarBleApiPowerStateObserver</a>
               </li>
               <li class="nav-group-task">
+                <a href="Protocols/PolarBleLowLevelApi.html">PolarBleLowLevelApi</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Protocols/PolarDeviceToHostNotificationsApi.html">PolarDeviceToHostNotificationsApi</a>
+              </li>
+              <li class="nav-group-task">
                 <a href="Protocols/PolarFirmwareUpdateApi.html">PolarFirmwareUpdateApi</a>
               </li>
               <li class="nav-group-task">
@@ -335,6 +347,9 @@
               </li>
               <li class="nav-group-task">
                 <a href="Structs/PolarCaloriesData.html">PolarCaloriesData</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Structs/PolarD2HNotificationData.html">PolarD2HNotificationData</a>
               </li>
               <li class="nav-group-task">
                 <a href="Structs/PolarDailySummary.html">PolarDailySummary</a>
@@ -530,7 +545,7 @@
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">protocol</span> <span class="kt">PolarBleApi</span> <span class="p">:</span> <span class="kt"><a href="Protocols/PolarActivityApi.html">PolarActivityApi</a></span><span class="p">,</span> <span class="kt"><a href="Protocols/PolarFirmwareUpdateApi.html">PolarFirmwareUpdateApi</a></span><span class="p">,</span> <span class="kt"><a href="Protocols/PolarH10OfflineExerciseApi.html">PolarH10OfflineExerciseApi</a></span><span class="p">,</span> <span class="kt"><a href="Protocols/PolarOfflineRecordingApi.html">PolarOfflineRecordingApi</a></span><span class="p">,</span> <span class="kt"><a href="Protocols/PolarOnlineStreamingApi.html">PolarOnlineStreamingApi</a></span><span class="p">,</span> <span class="kt"><a href="Protocols/PolarSdkModeApi.html">PolarSdkModeApi</a></span><span class="p">,</span> <span class="kt"><a href="Protocols/PolarSleepApi.html">PolarSleepApi</a></span><span class="p">,</span> <span class="kt"><a href="Protocols/PolarTrainingSessionApi.html">PolarTrainingSessionApi</a></span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">protocol</span> <span class="kt">PolarBleApi</span> <span class="p">:</span> <span class="kt"><a href="Protocols/PolarActivityApi.html">PolarActivityApi</a></span><span class="p">,</span> <span class="kt"><a href="Protocols/PolarBleLowLevelApi.html">PolarBleLowLevelApi</a></span><span class="p">,</span> <span class="kt"><a href="Protocols/PolarDeviceToHostNotificationsApi.html">PolarDeviceToHostNotificationsApi</a></span><span class="p">,</span> <span class="kt"><a href="Protocols/PolarFirmwareUpdateApi.html">PolarFirmwareUpdateApi</a></span><span class="p">,</span> <span class="kt"><a href="Protocols/PolarH10OfflineExerciseApi.html">PolarH10OfflineExerciseApi</a></span><span class="p">,</span> <span class="kt"><a href="Protocols/PolarOfflineRecordingApi.html">PolarOfflineRecordingApi</a></span><span class="p">,</span> <span class="kt"><a href="Protocols/PolarOnlineStreamingApi.html">PolarOnlineStreamingApi</a></span><span class="p">,</span> <span class="kt"><a href="Protocols/PolarSdkModeApi.html">PolarSdkModeApi</a></span><span class="p">,</span> <span class="kt"><a href="Protocols/PolarSleepApi.html">PolarSleepApi</a></span><span class="p">,</span> <span class="kt"><a href="Protocols/PolarTrainingSessionApi.html">PolarTrainingSessionApi</a></span></code></pre>
 
                         </div>
                       </div>
@@ -699,6 +714,63 @@
                         <div class="language">
                           <p class="aside-title">Swift</p>
                           <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">protocol</span> <span class="kt">PolarBleApiLogger</span> <span class="p">:</span> <span class="kt">AnyObject</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:11PolarBleSdk0aB11LowLevelApiP"></a>
+                    <a name="//apple_ref/swift/Protocol/PolarBleLowLevelApi" class="dashAnchor"></a>
+                    <a class="token" href="#/s:11PolarBleSdk0aB11LowLevelApiP">PolarBleLowLevelApi</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Undocumented</p>
+
+                        <a href="Protocols/PolarBleLowLevelApi.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">protocol</span> <span class="kt">PolarBleLowLevelApi</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:11PolarBleSdk0A28DeviceToHostNotificationsApiP"></a>
+                    <a name="//apple_ref/swift/Protocol/PolarDeviceToHostNotificationsApi" class="dashAnchor"></a>
+                    <a class="token" href="#/s:11PolarBleSdk0A28DeviceToHostNotificationsApiP">PolarDeviceToHostNotificationsApi</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Device to host notifications. Device notifications are used to inform client apps of important device state
+changes, such as negotiating data syncing.</p>
+
+                        <a href="Protocols/PolarDeviceToHostNotificationsApi.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">protocol</span> <span class="kt">PolarDeviceToHostNotificationsApi</span></code></pre>
 
                         </div>
                       </div>
@@ -967,7 +1039,7 @@ asked from device using <code>PolarOnlineStreamingApi.requestFullStreamSettings<
           </section>
         </section>
         <section id="footer">
-          <p>&copy; 2026 <a class="link" href="https://github.com/polarofficial/polar-ble-sdk" target="_blank" rel="external noopener">Polar Electro Oy</a>. All rights reserved. (Last updated: 2026-01-28)</p>
+          <p>&copy; 2026 <a class="link" href="https://github.com/polarofficial/polar-ble-sdk" target="_blank" rel="external noopener">Polar Electro Oy</a>. All rights reserved. (Last updated: 2026-02-23)</p>
           <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external noopener">jazzy ♪♫ v0.15.3</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external noopener">Realm</a> project.</p>
         </section>
       </article>

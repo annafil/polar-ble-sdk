@@ -233,7 +233,7 @@ class OnlineRecordingViewModel @Inject constructor(
     }
 
     fun addMarkerToLog(isStartMarker: Boolean) = viewModelScope.launch {
-        Single.fromCallable { collector.marker(isStartMarker, deviceId, isStartMarker) }
+        Single.fromCallable { collector.marker(deviceId, isStartMarker, System.nanoTime()) }
             .subscribeOn(Schedulers.io())
             .subscribe(
                 {},

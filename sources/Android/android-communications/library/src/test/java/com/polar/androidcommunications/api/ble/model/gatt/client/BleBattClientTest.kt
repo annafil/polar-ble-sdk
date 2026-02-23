@@ -336,4 +336,105 @@ class BleBattClientTest {
         assertEquals(events[10].wirelessExternalPowerConnected, PowerSourceState.RESERVED_FOR_FUTURE_USE)
 
     }
+
+    @Test
+    fun `getBatteryLevel_should_return_newest_battery_level_value`() {
+        // Arrange
+        val characteristic: UUID = BleBattClient.BATTERY_LEVEL_CHARACTERISTIC
+        val status = 0
+        val notifying = true
+        val deviceNotifyingBatteryData = intArrayOf(100, 80, 255, 0, -1)
+
+        //Act
+        val testObserver = TestSubscriber<Int>()
+        bleBattClient.monitorBatteryStatus(true)
+            .subscribe(testObserver)
+        bleBattClient.processServiceData(
+            characteristic,
+            byteArrayOf(deviceNotifyingBatteryData[0].toByte()),
+            status,
+            notifying
+        )
+        val result = bleBattClient.getBatteryLevel()
+
+        // Assert
+        testObserver.assertNoErrors()
+        assertEquals(100, result)
+    }
+
+    @Test
+    fun `getBatteryLevel_should_return_undefined_battery_percentage`() {
+        // Arrange
+        // Purposefully using wrong UUID here to test that getBatteryLevel()
+        // returns UNDEFINED_BATTERY_PERCENTAGE (-1) when battery level characteristic data is not received
+        val characteristic: UUID = UUID.randomUUID()
+        val status = 0
+        val notifying = true
+
+        //Act
+        val testObserver = TestSubscriber<Int>()
+        bleBattClient.monitorBatteryStatus(true)
+            .subscribe(testObserver)
+        bleBattClient.processServiceData(
+            characteristic,
+            byteArrayOf(),
+            status,
+            notifying
+        )
+        val result = bleBattClient.getBatteryLevel()
+
+        // Assert
+        testObserver.assertNoErrors()
+        assertEquals(-1, result)
+    }
+
+    @Test
+    fun `getChargerStatus_should_return_newest_charger_status`() {
+        // Arrange
+        val characteristic: UUID = BleBattClient.BATTERY_LEVEL_STATUS_CHARACTERISTIC
+        val status = 0
+        val notifying = true
+
+        // Battery present, wireless not connected, wired connected
+        val batteryStatusDataWiredConnected = byteArrayOf(0x00, 0b10100011.toByte())
+
+        //Act
+        bleBattClient.processServiceData(
+            characteristic,
+            batteryStatusDataWiredConnected,
+            status,
+            notifying
+        )
+
+        val result = bleBattClient.getChargerStatus()
+
+        //Assert
+        assertEquals(ChargeState.CHARGING, result)
+    }
+
+    @Test
+    fun `getChargerStatus_should_return_undefined_battery_percentage`() {
+        // Arrange
+        // Purposefully using wrong UUID here to test that getChargerStatus()
+        // returns ChargeState.UNKNOWN BATTERY_LEVEL_STATUS_CHARACTERISTIC characteristic data is not received
+        val characteristic: UUID = UUID.randomUUID()
+        val status = 0
+        val notifying = true
+
+        // Battery present, wireless not connected, wired connected
+        val batteryStatusDataWiredConnected = byteArrayOf(0x00, 0b10100011.toByte())
+
+        //Act
+        bleBattClient.processServiceData(
+            characteristic,
+            batteryStatusDataWiredConnected,
+            status,
+            notifying
+        )
+
+        val result = bleBattClient.getChargerStatus()
+
+        //Assert
+        assertEquals(ChargeState.UNKNOWN, result)
+    }
 }

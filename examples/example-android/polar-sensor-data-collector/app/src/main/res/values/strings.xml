@@ -14,6 +14,7 @@
     <string name="sdk_mode_header">SDK mode</string>
     <string name="sdk_mode_led_header">SDK mode LED animation</string>
     <string name="ppi_mode_led_header">PPI mode LED animation</string>
+    <string name="device_to_host_notifications_header">Device to host notifications</string>
     <string name="stream_settings_header">Data selection and settings</string>
     <string name="menu_settings">Settings</string>
     <string name="menu_about">About</string>
@@ -62,6 +63,7 @@
     <string name="skin_temperature_button_text">Skin temperature data</string>
     <string name="file_attached_mail_text">Hello,\n see file attachment</string>
     <string name="force_stop_sleep_header">Stop sleep recording</string>
+    <string name="ll_api_header">Low level API functions</string>
 
     <!-- Exercise activity -->
     <string name="title_activity_exercise_activity">Exercise activity</string>
@@ -316,4 +318,26 @@
     <!-- Graphs -->
     <string name="graph">Graph</string>
     <string name="acc_value">ACC  x:%1$s  y:%2$s  z:%3$s</string>
+
+    <!-- Generic API texts -->
+    <string name="generic_api_generic_api_do_read_file_header">Read a file from device</string>
+    <string name="generic_api_do_write_file_header">Write a file to device</string>
+    <string name="generic_api_generic_api_do_delete_file_header">Delete a file or directory from device</string>
+    <string name="generic_api_generic_api_do_list_files_header">List files in device</string>
+    <string name="generic_api_generic_api_do_list_files_recurse_deep">Recurse deep</string>
+    <string name="generic_api_do_read_file">File name to read</string>
+    <string name="generic_api_do_write_file_path">File path to write</string>
+    <string name="generic_api_do_write_file_data">File data to write</string>
+    <string name="generic_api_do_list_files">List files from path</string>
+    <string name="generic_api_do_delete_file">Delete file or directory</string>
+    <string name="generic_api_open_view">Open</string>
+    <string name="generic_api_title">Experimental Low Level Api</string>
+    <string name="generic_api_button_read">Read</string>
+    <string name="generic_api_button_write">Write</string>
+    <string name="generic_api_button_list">List</string>
+    <string name="generic_api_button_delete">Delete</string>
+
+    <!-- Battery API texts -->
+    <string name="charge_state_header">Read charge state</string>
+
 </resources>

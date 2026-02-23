@@ -95,12 +95,24 @@ class PolarBleSdkManager : ObservableObject {
     
     @Published var userDeviceSettings: UserDeviceSettingsFeature
     @Published var multiBleFeature: MultiBleFeature = MultiBleFeature()
+    
+    @Published var genericApiFileList: [String] = []
+    @Published var genericApiFileData: Data = Data()
 
     private var exerciseRefreshTimer: DispatchSourceTimer?
     private var broadcastDisposable: Disposable?
     private var autoConnectDisposable: Disposable?
     private var onlineStreamingDisposables: [PolarDeviceDataType: Disposable?] = [:]
     private var exerciseNotificationDisposable: Disposable?
+    private var sleepObserverDisposable: Disposable?
+    
+    @Published var deviceToHostNotificationDisposable: Disposable?
+    @Published var deviceToHostNotificationInfo: (String, PolarDeviceToHostNotification, Data, Any?)?
+    
+    @Published var batteryChargeLevel = -1
+    @Published var deviceChargeStatus = BleBasClient.ChargeState.unknown
+    @Published var rssi: Any = "N/A"
+    @Published var didDisconnect = false
     
     private let disposeBag = DisposeBag()
     private var h10ExerciseEntry: PolarExerciseEntry?
@@ -109,6 +121,8 @@ class PolarBleSdkManager : ObservableObject {
     
     private let encoder = JSONEncoder()
     private let dateFormatter = DateFormatter()
+
+    @Published var elapsedTimeToast: String? = nil
     
     init() {
         self.isBluetoothOn = api.isBlePowered
@@ -1948,35 +1962,35 @@ extension PolarBleSdkManager {
                         case .fetchingFwUpdatePackage(let details):
                             let message = "fetchingFwUpdatePackage: \(details)"
                             self.firmwareUpdateFeature.status = message
-                            self.showFWUNotification(id: badgeId, title: "Fetching firmware", body: details)
+                            self.showUNUserNotification(id: badgeId, title: "Fetching firmware", body: details)
                             self.updatingDevices.append(device)
                         case .preparingDeviceForFwUpdate(let details):
                             let message = "preparingDeviceForFwUpdate: \(details)"
                             self.firmwareUpdateFeature.status = message
-                            self.showFWUNotification(id: badgeId, title: "Preparing device for update", body: details)
+                            self.showUNUserNotification(id: badgeId, title: "Preparing device for update", body: details)
                         case .writingFwUpdatePackage(let details):
                             let message = "writingFwUpdatePackage: \(details)"
                             self.firmwareUpdateFeature.status = message
-                            self.showFWUNotification(id: badgeId, title: "Writing firmware to device", body: details)
+                            self.showUNUserNotification(id: badgeId, title: "Writing firmware to device", body: details)
                         case .finalizingFwUpdate(let details):
                             let message = "finalizingFwUpdate: \(details)"
                             self.firmwareUpdateFeature.status = message
-                            self.showFWUNotification(id: badgeId, title: "Finalizing update", body: details)
+                            self.showUNUserNotification(id: badgeId, title: "Finalizing update", body: details)
                         case .fwUpdateCompletedSuccessfully(let details):
                             let message = "fwUpdateCompletedSuccessfully: \(details)"
                             self.firmwareUpdateFeature.status = message
-                            self.showFWUNotification(id: badgeId, title: "Firmware update complete", body: details)
+                            self.showUNUserNotification(id: badgeId, title: "Firmware update complete", body: details)
                             self.firmwareUpdateFeature.inProgress = false
                             await self.checkFirmwareUpdate()
                         case .fwUpdateNotAvailable(let details):
                             let message = "fwUpdateNotAvailable: \(details)"
                             self.firmwareUpdateFeature.status = message
-                            self.showFWUNotification(id: badgeId, title: "Firmware update not available", body: details)
+                            self.showUNUserNotification(id: badgeId, title: "Firmware update not available", body: details)
                             self.firmwareUpdateFeature.inProgress = false
                         case .fwUpdateFailed(let details):
                             let message = "fwUpdateFailed: \(details)"
                             self.firmwareUpdateFeature.status = message
-                            self.showFWUNotification(id: badgeId, title: "Firmware update failed", body: details)
+                            self.showUNUserNotification(id: badgeId, title: "Firmware update failed", body: details)
                             self.firmwareUpdateFeature.inProgress = false
                         }
                     }
@@ -2353,10 +2367,11 @@ extension PolarBleSdkManager {
             }
         }
     }
-
+    
     func observeSleepRecordingState() {
         if case .connected(let device) = deviceConnectionState {
-            api.observeSleepRecordingState(identifier: device.deviceId)
+            sleepObserverDisposable?.dispose()
+            sleepObserverDisposable = api.observeSleepRecordingState(identifier: device.deviceId)
                 .observe(on: MainScheduler.instance)
                 .subscribe { e in
                     switch e {
@@ -2370,7 +2385,8 @@ extension PolarBleSdkManager {
                     case .completed:
                         NSLog("observeSleepRecordingSettings completed")
                     }
-                }.disposed(by: disposeBag)
+                }
+            sleepObserverDisposable?.disposed(by: disposeBag)
         }
     }
     
@@ -2670,7 +2686,7 @@ extension PolarBleSdkManager {
             }
         }
     }
-
+    
     private func somethingFailed(text: String) {
         self.generalMessage = Message(text: "Error: \(text)")
         NSLog("Error \(text)")
@@ -2737,19 +2753,77 @@ extension PolarBleSdkManager {
             result +=  polarMagnetometerData.map{ "\($0.timeStamp) \($0.x) \($0.y) \($0.z)" }.joined(separator: "\n")
         case let polarPpgData as PolarPpgData:
             if polarPpgData.type == PpgDataType.ppg1 {
-                result += polarPpgData.samples.map{ "\($0.timeStamp) \($0.channelSamples[0])" }.joined(separator: "\n")
+                result += polarPpgData.samples.map { sample -> String in
+                    var line = "\(sample.timeStamp)"
+                    if sample.channelSamples.count >= 1 {
+                        line += " \(sample.channelSamples[0])"
+                    } else {
+                        BleLogger.trace("PPG1 sample incomplete - channels: \(sample.channelSamples.count)")
+                    }
+                    return line
+                }.joined(separator: "\n")
             }
             if polarPpgData.type == PpgDataType.ppg3 {
-                result += polarPpgData.samples.map{ "\($0.timeStamp) \($0.channelSamples[0]) \($0.channelSamples[1]) \($0.channelSamples[2])" }.joined(separator: "\n")
+                result += polarPpgData.samples.map { sample -> String in
+                    var line = "\(sample.timeStamp)"
+                    for i in 0..<min(3, sample.channelSamples.count) {
+                        line += " \(sample.channelSamples[i])"
+                    }
+                    if sample.channelSamples.count < 3 {
+                        BleLogger.trace("PPG3 sample incomplete - channels: \(sample.channelSamples.count)")
+                    }
+                    return line
+                }.joined(separator: "\n")
             }
             if polarPpgData.type == PpgDataType.ppg3_ambient1 {
-                result += polarPpgData.samples.map{ "\($0.timeStamp) \($0.channelSamples[0]) \($0.channelSamples[1]) \($0.channelSamples[2]) \($0.channelSamples[3])" }.joined(separator: "\n")
+                result += polarPpgData.samples.map { sample -> String in
+                    var line = "\(sample.timeStamp)"
+                    for i in 0..<min(4, sample.channelSamples.count) {
+                        line += " \(sample.channelSamples[i])"
+                    }
+                    if sample.channelSamples.count < 4 {
+                        BleLogger.trace("PPG3_ambient1 sample incomplete - channels: \(sample.channelSamples.count)")
+                    }
+                    return line
+                }.joined(separator: "\n")
             }
             if polarPpgData.type == PpgDataType.ppg21 {
-                result += polarPpgData.samples.map{ "\($0.timeStamp) \($0.channelSamples[0]) \($0.channelSamples[1]) \($0.channelSamples[2]) \($0.channelSamples[3]), \($0.channelSamples[4]) \($0.channelSamples[5]) \($0.channelSamples[6]) \($0.channelSamples[7]) \($0.channelSamples[8]) \($0.channelSamples[9]) \($0.channelSamples[10]) \($0.channelSamples[11]) \($0.channelSamples[12]) \($0.channelSamples[13]) \($0.channelSamples[14]) \($0.channelSamples[15]) \($0.channelSamples[16]) \($0.channelSamples[17]) \($0.channelSamples[18]) \($0.channelSamples[19]) \($0.statusBits![0]) \($0.statusBits![1]) \($0.statusBits![2]) \($0.statusBits![3]) \($0.statusBits![4]) \($0.statusBits![5]) \($0.statusBits![6]) \($0.statusBits![7]) \($0.statusBits![8]) \($0.statusBits![9]) \($0.statusBits![10]) \($0.statusBits![11]) \($0.statusBits![12]) \($0.statusBits![13]) \($0.statusBits![14]) \($0.statusBits![15])  \($0.statusBits![16]) \($0.statusBits![17]) \($0.statusBits![18]) \($0.statusBits![19])" }.joined(separator: "\n")
+                result += polarPpgData.samples.map { sample -> String in
+                    var line = "\(sample.timeStamp)"
+                    // Add available channel samples (up to 20)
+                    for i in 0..<min(20, sample.channelSamples.count) {
+                        line += " \(sample.channelSamples[i])"
+                    }
+                    // Add available status bits (up to 20)
+                    if let statusBits = sample.statusBits {
+                        for i in 0..<min(20, statusBits.count) {
+                            line += " \(statusBits[i])"
+                        }
+                    }
+                    if sample.channelSamples.count < 20 || sample.statusBits == nil || sample.statusBits!.count < 20 {
+                        BleLogger.trace("PPG21 sample incomplete - channels: \(sample.channelSamples.count), statusBits: \(sample.statusBits?.count ?? 0)")
+                    }
+                    return line
+                }.joined(separator: "\n")
             }
             if polarPpgData.type == PpgDataType.ppg2 {
-                result += polarPpgData.samples.map{ "\($0.timeStamp) \($0.channelSamples[0]) \($0.channelSamples[1]) \($0.statusBits![0]) \($0.statusBits![1])" }.joined(separator: "\n")
+                result += polarPpgData.samples.map { sample -> String in
+                    var line = "\(sample.timeStamp)"
+                    // Add available channel samples (up to 2)
+                    for i in 0..<min(2, sample.channelSamples.count) {
+                        line += " \(sample.channelSamples[i])"
+                    }
+                    // Add available status bits (up to 2)
+                    if let statusBits = sample.statusBits {
+                        for i in 0..<min(2, statusBits.count) {
+                            line += " \(statusBits[i])"
+                        }
+                    }
+                    if sample.channelSamples.count < 2 || sample.statusBits == nil || sample.statusBits!.count < 2 {
+                        BleLogger.trace("PPG2 sample incomplete - channels: \(sample.channelSamples.count), statusBits: \(sample.statusBits?.count ?? 0)")
+                    }
+                    return line
+                }.joined(separator: "\n")
             }
         case let polarPpiData as PolarPpiData:
             result += polarPpiData.samples.map{ "\($0.timeStamp) \($0.ppInMs) \($0.hr) \($0.ppErrorEstimate) \($0.blockerBit) \($0.skinContactSupported) \($0.skinContactStatus)" }.joined(separator: "\n")
@@ -2964,6 +3038,123 @@ extension PolarBleSdkManager {
             stopObservingExerciseNotifications()
         } else {
             startObservingExerciseNotifications()
+        }
+    }
+    
+    func startObservingDeviceToHostNotifications() {
+        
+        guard case .connected(let device) = deviceConnectionState else { return }
+        
+        let deviceId = device.deviceId
+        let badgeId = "D2H-\(deviceId)"
+        let title = "Device \(deviceId)"
+        
+        deviceToHostNotificationDisposable?.dispose()
+        
+        deviceToHostNotificationDisposable = api.observeDeviceToHostNotifications(identifier: deviceId)
+            .observe(on: MainScheduler.instance)
+            .subscribe(
+                onNext: { [weak self] notificationData in
+                    let paramDescription = notificationData.parsedParameters != nil ? String(describing: notificationData.parsedParameters!) : "none"
+                    let details = "\(notificationData.notificationType) with \(notificationData.parameters.count) bytes, param: \(paramDescription)"
+                    BleLogger.trace("PSDC: Device to host notification received: \(details)")
+                    self?.showUNUserNotification(id: badgeId, title: title, body: details)
+
+                },
+                onError: { [weak self] error in
+                    let details = "Device to host notification receiving from device \(device.deviceId) failed with error \(error)"
+                    BleLogger.trace("PSDC: \(details)")
+                    self?.showUNUserNotification(id: badgeId, title: title, body: details)
+                    self?.stopObservingExerciseNotifications()
+                },
+                onCompleted: { [weak self] in
+                    BleLogger.trace("PSDC: Device to host notification observing completed")
+                    self?.stopObservingExerciseNotifications()
+                }
+            )
+    }
+
+    func stopObservingDeviceToHostNotifications() {
+        deviceToHostNotificationDisposable?.dispose()
+        deviceToHostNotificationDisposable = nil
+    }
+        
+    func toggleDeviceToHostNotificationObservation() {
+        if deviceToHostNotificationDisposable != nil {
+            stopObservingDeviceToHostNotifications()
+        } else {
+            startObservingDeviceToHostNotifications()
+        }
+    }
+    
+    func getBatteryChargeLevel() throws {
+        if case .connected(let device) = deviceConnectionState {
+            self.batteryChargeLevel = try api.getBatteryLevel(identifier: device.deviceId)
+        }
+    }
+
+    func getChargeStatus() throws {
+        if case .connected(let device) = deviceConnectionState {
+            self.deviceChargeStatus = try api.getChargerState(identifier: device.deviceId)
+        }
+    }
+
+    // PolarBleSdkManager methods for generic low level API.
+    func listFiles(directoryPath: String, recurseDeep: Bool = false) async throws {
+        if case .connected(let device) = deviceConnectionState {
+            let fileList = try await api.getFileList(identifier: device.deviceId, directoryPath: directoryPath, recurseDeep: recurseDeep).value
+            Task { @MainActor in
+                if (fileList.isEmpty) {
+                    NSLog("No files found for path \(directoryPath)")
+                } else {
+                    genericApiFileList.append(contentsOf: fileList)
+                }
+            }
+        }
+    }
+
+    func readFile(filePath: String) async throws {
+        if case .connected(let device) = deviceConnectionState {
+            let fileData = try await api.readFile(identifier: device.deviceId, filePath: filePath).value
+            Task { @MainActor in
+                if (fileData == nil) {
+                    NSLog("No file data found for path \(filePath)")
+                } else {
+                    genericApiFileData = fileData ?? Data()
+                }
+            }
+        }
+    }
+
+    func writeFile(filePath: String, fileData: Data) async throws {
+        if case .connected(let device) = deviceConnectionState {
+            try await api.writeFile(identifier: device.deviceId, filePath: filePath, fileData: fileData).value
+        }
+    }
+
+    func deleteFile(filePath: String) async throws {
+        if case .connected(let device) = deviceConnectionState {
+            try await api.deleteFileOrDirectory(identifier: device.deviceId, filePath: filePath).value
+        }
+    }
+
+    func getRSSIValue() {
+        if case .connected(let device) = deviceConnectionState {
+            do {
+                rssi = try api.getRSSIValue(device.deviceId)
+            } catch {
+                NSLog("Failed to get RSSI value: \(error)")
+            }
+        }
+    }
+
+    func checkIfDeviceDisconnectedDueToRemovedPairing() {
+        if case .connected(let device) = deviceConnectionState {
+            do {
+                didDisconnect = try api.checkIfDeviceDisconnectedDueRemovedPairing(device.deviceId)
+            } catch {
+                NSLog("Failed to get check if device did disconnect due to removed pairing: \(error)")
+            }
         }
     }
 }
@@ -3304,14 +3495,16 @@ extension PolarBleSdkManager : PolarBleApiLogger {
 
 // Mark: - iOS local notifications
 extension PolarBleSdkManager {
-    private func showFWUNotification(id: String, title: String, body: String) {
+    private func showUNUserNotification(id: String, title: String, body: String) {
         Task { @MainActor in
             do {
-                if try await UNUserNotificationCenter.current().requestAuthorization(options: [.alert]) == true {
+                if try await UNUserNotificationCenter.current().requestAuthorization(options: [.alert,.badge, .sound]) == true {
                     let content = UNMutableNotificationContent()
                     content.title = title
                     content.body = body
                     try await UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: id, content: content, trigger: nil))
+                } else {
+                    BleLogger.trace("PSDC: Permission not granted for notifications")
                 }
             } catch let err {
                 // Ignore
@@ -3320,3 +3513,4 @@ extension PolarBleSdkManager {
         }
     }
 }
+

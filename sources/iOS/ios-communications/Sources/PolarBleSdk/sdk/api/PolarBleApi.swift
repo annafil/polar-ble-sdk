@@ -208,7 +208,7 @@ public typealias PolarExerciseData = (interval: UInt32, samples: [UInt32])
 public typealias PolarRecordingStatus = (ongoing: Bool, entryId: String)
 
 /// API.
-public protocol PolarBleApi: PolarOfflineRecordingApi, PolarOnlineStreamingApi, PolarH10OfflineExerciseApi, PolarSdkModeApi, PolarFirmwareUpdateApi, PolarActivityApi, PolarSleepApi, PolarTrainingSessionApi {
+public protocol PolarBleApi: PolarOfflineRecordingApi, PolarOnlineStreamingApi, PolarH10OfflineExerciseApi, PolarSdkModeApi, PolarFirmwareUpdateApi, PolarActivityApi, PolarSleepApi, PolarTrainingSessionApi, PolarDeviceToHostNotificationsApi, PolarBleLowLevelApi {
     
     /// remove all known devices, which are not in use
     func cleanup()
@@ -589,6 +589,25 @@ public protocol PolarBleApi: PolarOfflineRecordingApi, PolarOnlineStreamingApi, 
      */
     func setAutomaticOHRMeasurementEnabled(_ identifier: String, enabled: Bool) -> Completable
 
+    /**
+     * Get last received RSSI (Received Signal Strength Indicator) value for the connected device.
+     * The value is obtained from iOS BLE in 1 second interval.
+     * The value is typically between -40 to -55 dBm when the device is nearby.
+     *
+     * - parameter identifier: Polar device ID or BT address
+     * - returns:Integer value of the last received RSSI or error if the device is not connected or identifier is invalid.
+     */
+     func getRSSIValue(_ identifier: String) throws -> Int
+
+    /**
+     * Check if the device did disconnect from BLE due to removed pairing. If the device did disconnect due to removed pairing,
+     * the device will not be available for connection until it is paired again. It may be required to forget the device from iOS Bluetooth settings and pair it again.
+     *
+     * - parameter identifier: Polar device ID or BT address
+     * - returns:True if was disconnected due to removed pairing, false otherwise (BLE connection is OK).
+     */
+    func checkIfDeviceDisconnectedDueRemovedPairing(_ identifier: String) throws -> Bool
+
     /// Common GAP (Generic access profile) observer
     var observer: PolarBleApiObserver? { get set }
     
@@ -618,4 +637,20 @@ public protocol PolarBleApi: PolarOfflineRecordingApi, PolarOnlineStreamingApi, 
     /// Note that firmware update (FWU) turns on automatic reconnection automatically, and restores the setting
     /// automatically when operation completes. One should not change this setting during FWU.
     var automaticReconnection: Bool { get set }
+    
+    /// Request last observed battery level value from device. Requires feature[PolarBleSdkFeature.feature_battery_info]
+    ///
+    /// - Parameters:
+    ///  - identifier Polar device ID or BT address
+    /// - Returns: Returns the level of battery charging percentage 0 - 100%
+    /// Will return -1 if battery battery level is not available.
+    func getBatteryLevel(identifier: String) throws -> Int
+
+    /// Request last observed charging status value from device. Requires feature [PolarBleSdkFeature.feature_battery_info]
+    ///
+    /// - Parameters:
+    ///  - identifier Polar device ID or BT address
+    /// - Returns: Returns `ChargeState` value indicating the last observed charging status of the device.
+    /// Will return -1 if battery battery charging percentage level is not available.
+    func getChargerState(identifier: String) throws -> BleBasClient.ChargeState
 }

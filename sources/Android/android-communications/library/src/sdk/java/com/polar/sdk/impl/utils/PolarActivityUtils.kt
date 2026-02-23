@@ -10,7 +10,6 @@ import com.polar.sdk.api.model.activity.PolarDailySummaryData
 import com.polar.sdk.api.model.activity.parsePbActivityInfo
 import com.polar.sdk.api.model.activity.parsePbDailySummary
 import com.polar.sdk.api.model.activity.polarActiveTimeFromProto
-import com.polar.sdk.impl.BDBleApiImpl.FetchRecursiveCondition
 import fi.polar.remote.representation.protobuf.ActivitySamples
 import fi.polar.remote.representation.protobuf.DailySummary
 import io.reactivex.rxjava3.core.Flowable
@@ -286,7 +285,7 @@ internal object PolarActivityUtils {
         }
     }
 
-    private fun listFiles(client: BlePsFtpClient, folderPath: String = "/", condition: FetchRecursiveCondition): Flowable<String> {
+    private fun listFiles(client: BlePsFtpClient, folderPath: String = "/", condition: PolarFileUtils.FetchRecursiveCondition): Flowable<String> {
 
         var path = folderPath
         if (path.first() != '/') {
@@ -308,7 +307,7 @@ internal object PolarActivityUtils {
             }
     }
 
-    private fun fetchRecursively(client: BlePsFtpClient, path: String, condition: FetchRecursiveCondition): Flowable<Pair<String, Long>> {
+    private fun fetchRecursively(client: BlePsFtpClient, path: String, condition: PolarFileUtils.FetchRecursiveCondition): Flowable<Pair<String, Long>> {
         val builder = PftpRequest.PbPFtpOperation.newBuilder()
         builder.command = PftpRequest.PbPFtpOperation.Command.GET
         builder.path = path
