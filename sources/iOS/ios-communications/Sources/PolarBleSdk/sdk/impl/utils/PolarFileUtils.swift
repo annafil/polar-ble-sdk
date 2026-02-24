@@ -41,26 +41,30 @@ class PolarFileUtils {
     }
     
     func checkAutoSampleFile(identifier: String, filePath: String, until: Date) -> Single<Bool> {
-        
+        // FORK: wrap parse in do/catch so a corrupt file skips delete instead of crashing
         var canDelete = false
         return getFile(identifier: identifier, filePath: filePath)
             .map { file -> Bool in
-                let calendar = Calendar.current
-                let dateFormatter = DateFormatter()
-                dateFormatter.dateFormat = "yyyyMMdd"
-                dateFormatter.timeZone = TimeZone(abbreviation: "UTC")
-                
-                let fileData = try Data_PbAutomaticSampleSessions(serializedData: file as Data)
-                let proto = AutomaticSamples.fromProto(proto: fileData)
-                let dateCompareResult = calendar.compare(self.dateFromStringWOTime(dateFrom: dateFormatter.string(from: proto.day!)), to: self.dateFromStringWOTime(dateFrom: dateFormatter.string(from: until)), toGranularity: .day)
-                
-                switch dateCompareResult {
-                case .orderedSame:
-                    canDelete = true
-                case .orderedAscending:
-                    canDelete = true
-                case .orderedDescending:
-                    break
+                do {
+                    let calendar = Calendar.current
+                    let dateFormatter = DateFormatter()
+                    dateFormatter.dateFormat = "yyyyMMdd"
+                    dateFormatter.timeZone = TimeZone(abbreviation: "UTC")
+
+                    let fileData = try Data_PbAutomaticSampleSessions(serializedData: file as Data)
+                    let proto = AutomaticSamples.fromProto(proto: fileData)
+                    let dateCompareResult = calendar.compare(self.dateFromStringWOTime(dateFrom: dateFormatter.string(from: proto.day!)), to: self.dateFromStringWOTime(dateFrom: dateFormatter.string(from: until)), toGranularity: .day)
+
+                    switch dateCompareResult {
+                    case .orderedSame:
+                        canDelete = true
+                    case .orderedAscending:
+                        canDelete = true
+                    case .orderedDescending:
+                        break
+                    }
+                } catch {
+                    BleLogger.error("checkAutoSampleFile: Failed to parse \(filePath): \(error). Skipping delete.")
                 }
                 return canDelete
             }.asSingle()
