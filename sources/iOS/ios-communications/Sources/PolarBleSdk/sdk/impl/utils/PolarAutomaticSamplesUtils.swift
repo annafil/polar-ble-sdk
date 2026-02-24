@@ -9,7 +9,7 @@ private let AUTOMATIC_SAMPLES_PATTERN = #"AUTOS\d{3}\.BPB"#
 private let TAG = "PolarAutomaticSamplesUtils"
 
 internal class PolarAutomaticSamplesUtils {
-    
+
     /// Read 24/7 heart rate samples for a given date range.
     static func read247HrSamples(client: BlePsFtpClient, fromDate: Date, toDate: Date) -> Single<[Polar247HrSamplesData]> {
         BleLogger.trace(TAG, "read247HrSamples: from \(fromDate) to \(toDate)")
@@ -92,9 +92,12 @@ internal class PolarAutomaticSamplesUtils {
                         let range = NSRange(location: 0, length: entry.name.count)
                         return regex.firstMatch(in: entry.name, range: range) != nil ? entry.name : nil
                     }
+                    // FORK: cache-filter the upstream file list before downloading
+                    let filesToDownload = PolarAutomaticSamplesCacheUtils.filesToDownload(filteredNames: filteredFiles, dir: dir, fromDate: fromDate, toDate: toDate, tag: "read247PPiSamples")
 
-                    return Observable.from(filteredFiles)
-                        .concatMap { fileName -> Observable<Polar247PPiSamplesData?> in
+                    return Observable.from(filesToDownload)
+                        .concatMap { file -> Observable<Polar247PPiSamplesData?> in
+                            let fileName = file.name
                             let filePath = "\(autoSamplesPath)\(fileName)"
                             let fileOperation = Protocol_PbPFtpOperation.with {
                                 $0.command = .get
@@ -112,6 +115,9 @@ internal class PolarAutomaticSamplesUtils {
                                             month: Int(sampleDateProto.month),
                                             day: Int(sampleDateProto.day)
                                         )
+
+                                        // FORK: update cache after successful parse
+                                        PolarAutomaticSamplesCacheUtils.updateCache(for: file, day: sampleDateProto)
 
                                         guard sampleDate >= dateFrom && sampleDate <= dateTo else { return nil }
 
