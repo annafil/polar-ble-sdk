@@ -7,9 +7,8 @@ import Foundation
 /// This class appends to a single mutable array per data type, turning O(n²)
 /// accumulation into O(n).
 ///
-/// Usage:
-///   1. Call the appropriate `accumulate*()` method with already-mapped Polar data.
-///   2. After all sub-recordings are processed, call `getResult()`.
+/// Self-contained: accepts raw `OfflineRecordingData<Any>` and does its own
+/// PMD-to-Polar mapping internally, so callers need only a single method call.
 internal class EfficientOfflineAccumulator {
 
     // MARK: - ACC
@@ -17,39 +16,15 @@ internal class EfficientOfflineAccumulator {
     private var accStartTime: Date?
     private var accSettings: PolarSensorSetting?
 
-    func accumulateAcc(_ data: PolarAccData, startTime: Date, settings: PolarSensorSetting) {
-        if accStartTime == nil {
-            accStartTime = startTime
-            accSettings = settings
-        }
-        accSamples.append(contentsOf: data)
-    }
-
     // MARK: - GYRO
     private var gyroSamples: PolarGyroData = []
     private var gyroStartTime: Date?
     private var gyroSettings: PolarSensorSetting?
 
-    func accumulateGyro(_ data: PolarGyroData, startTime: Date, settings: PolarSensorSetting) {
-        if gyroStartTime == nil {
-            gyroStartTime = startTime
-            gyroSettings = settings
-        }
-        gyroSamples.append(contentsOf: data)
-    }
-
     // MARK: - MAG
     private var magSamples: PolarMagnetometerData = []
     private var magStartTime: Date?
     private var magSettings: PolarSensorSetting?
-
-    func accumulateMag(_ data: PolarMagnetometerData, startTime: Date, settings: PolarSensorSetting) {
-        if magStartTime == nil {
-            magStartTime = startTime
-            magSettings = settings
-        }
-        magSamples.append(contentsOf: data)
-    }
 
     // MARK: - PPG
     private var ppgSamples: [(timeStamp: UInt64, channelSamples: [Int32], statusBits: [Int8]?)] = []
@@ -57,65 +32,135 @@ internal class EfficientOfflineAccumulator {
     private var ppgStartTime: Date?
     private var ppgSettings: PolarSensorSetting?
 
-    func accumulatePpg(_ data: PolarPpgData, startTime: Date, settings: PolarSensorSetting) {
-        if ppgStartTime == nil {
-            ppgStartTime = startTime
-            ppgSettings = settings
-            ppgType = data.type
-        }
-        ppgSamples.append(contentsOf: data.samples)
-    }
-
     // MARK: - PPI
     private var ppiSamples: [(timeStamp: UInt64, hr: Int, ppInMs: UInt16, ppErrorEstimate: UInt16, blockerBit: Int, skinContactStatus: Int, skinContactSupported: Int)] = []
     private var ppiStartTime: Date?
-
-    func accumulatePpi(_ data: PolarPpiData, startTime: Date) {
-        if ppiStartTime == nil {
-            ppiStartTime = startTime
-        }
-        ppiSamples.append(contentsOf: data.samples)
-    }
 
     // MARK: - HR
     private var hrSamples: PolarHrData = []
     private var hrStartTime: Date?
 
-    func accumulateHr(_ data: PolarHrData, startTime: Date) {
-        if hrStartTime == nil {
-            hrStartTime = startTime
-        }
-        hrSamples.append(contentsOf: data)
-    }
-
     // MARK: - Temperature
     private var tempSamples: [(timeStamp: UInt64, temperature: Float)] = []
     private var tempStartTime: Date?
-
-    func accumulateTemperature(_ data: PolarTemperatureData, startTime: Date) {
-        if tempStartTime == nil {
-            tempStartTime = startTime
-        }
-        tempSamples.append(contentsOf: data.samples)
-    }
 
     // MARK: - Skin Temperature
     private var skinTempSamples: [(timeStamp: UInt64, temperature: Float)] = []
     private var skinTempStartTime: Date?
 
-    func accumulateSkinTemperature(_ data: PolarTemperatureData, startTime: Date) {
-        if skinTempStartTime == nil {
-            skinTempStartTime = startTime
-        }
-        skinTempSamples.append(contentsOf: data.samples)
-    }
-
     // MARK: - Empty
     private var emptyStartTime: Date?
 
-    func accumulateEmpty(startTime: Date) {
-        if emptyStartTime == nil {
-            emptyStartTime = startTime
+    // MARK: - Accumulate
+
+    /// Processes a single sub-recording chunk, mapping PMD types to Polar types
+    /// and appending samples to the internal mutable arrays.
+    func accumulate(_ offlineRecordingData: OfflineRecordingData<Any>) throws {
+        let settings = offlineRecordingData.recordingSettings?.mapToPolarSettings() ?? PolarSensorSetting()
+        let startTime = offlineRecordingData.startTime
+
+        switch offlineRecordingData.data {
+        case let accData as AccData:
+            if accStartTime == nil {
+                accStartTime = startTime
+                accSettings = settings
+            }
+            for sample in accData.samples {
+                accSamples.append((timeStamp: sample.timeStamp, x: sample.x, y: sample.y, z: sample.z))
+            }
+
+        case let gyroData as GyrData:
+            if gyroStartTime == nil {
+                gyroStartTime = startTime
+                gyroSettings = settings
+            }
+            for sample in gyroData.samples {
+                gyroSamples.append((timeStamp: sample.timeStamp, x: sample.x, y: sample.y, z: sample.z))
+            }
+
+        case let magData as MagData:
+            if magStartTime == nil {
+                magStartTime = startTime
+                magSettings = settings
+            }
+            for sample in magData.samples {
+                magSamples.append((timeStamp: sample.timeStamp, x: sample.x, y: sample.y, z: sample.z))
+            }
+
+        case let ppgData as PpgData:
+            if ppgStartTime == nil {
+                ppgStartTime = startTime
+                ppgSettings = settings
+            }
+            for sample in ppgData.samples {
+                if sample.frameType == PmdDataFrameType.type_0 {
+                    let d = sample as! PpgDataFrameType0
+                    ppgSamples.append((timeStamp: sample.timeStamp!, channelSamples: [d.ppgDataSamples[0], d.ppgDataSamples[1], d.ppgDataSamples[2], d.ambientSample], statusBits: nil))
+                    ppgType = .ppg3_ambient1
+                } else if sample.frameType == PmdDataFrameType.type_6 {
+                    let d = sample as! PpgDataFrameType6
+                    ppgSamples.append((timeStamp: sample.timeStamp!, channelSamples: [d.sportId], statusBits: nil))
+                    ppgType = .ppg1
+                } else if sample.frameType == PmdDataFrameType.type_7 {
+                    let d = sample as! PpgDataFrameType7
+                    ppgSamples.append((timeStamp: sample.timeStamp!, channelSamples: d.ppgDataSamples, statusBits: nil))
+                    ppgType = .ppg17
+                } else if sample.frameType == PmdDataFrameType.type_10 {
+                    let d = sample as! PpgDataFrameType10
+                    ppgSamples.append((timeStamp: sample.timeStamp!, channelSamples: d.greenSamples + d.redSamples + d.irSamples, statusBits: d.statusBits))
+                    ppgType = .ppg21
+                } else if sample.frameType == PmdDataFrameType.type_9 {
+                    let d = sample as! PpgDataFrameType9
+                    ppgSamples.append((timeStamp: sample.timeStamp!, channelSamples: d.ppgDataSamples, statusBits: nil))
+                    ppgType = .ppg3
+                } else if sample.frameType == PmdDataFrameType.type_13 {
+                    let d = sample as! PpgDataFrameType13
+                    ppgSamples.append((timeStamp: sample.timeStamp!, channelSamples: [d.ppgDataSamples[0], d.ppgDataSamples[1]], statusBits: d.statusBits))
+                    ppgType = .ppg2
+                }
+            }
+
+        case let ppiData as PpiData:
+            if ppiStartTime == nil {
+                ppiStartTime = startTime
+            }
+            for sample in ppiData.samples {
+                ppiSamples.append((timeStamp: sample.timeStamp, hr: sample.hr, ppInMs: sample.ppInMs, ppErrorEstimate: sample.ppErrorEstimate, blockerBit: sample.blockerBit, skinContactStatus: sample.skinContactStatus, skinContactSupported: sample.skinContactSupported))
+            }
+
+        case let hrData as OfflineHrData:
+            if hrStartTime == nil {
+                hrStartTime = startTime
+            }
+            for sample in hrData.samples {
+                hrSamples.append((hr: sample.hr, ppgQuality: sample.ppgQuality, correctedHr: sample.correctedHr, rrsMs: [], rrAvailable: false, contactStatus: false, contactStatusSupported: false))
+            }
+
+        case let temperatureData as TemperatureData:
+            if tempStartTime == nil {
+                tempStartTime = startTime
+            }
+            for sample in temperatureData.samples {
+                tempSamples.append((timeStamp: sample.timeStamp, temperature: sample.temperature))
+            }
+
+        case let skinTemperatureData as SkinTemperatureData:
+            if skinTempStartTime == nil {
+                skinTempStartTime = startTime
+            }
+            for sample in skinTemperatureData.samples {
+                skinTempSamples.append((timeStamp: sample.timeStamp, temperature: sample.skinTemperature))
+            }
+
+        case _ as EmptyData:
+            if emptyStartTime == nil {
+                emptyStartTime = startTime
+            }
+
+        default:
+            throw PolarErrors.polarOfflineRecordingError(
+                description: "GetOfflineRecording failed. Data type is not supported."
+            )
         }
     }
 

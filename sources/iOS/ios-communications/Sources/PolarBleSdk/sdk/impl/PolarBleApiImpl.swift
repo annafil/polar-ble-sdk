@@ -1342,7 +1342,7 @@ extension PolarBleApiImpl: PolarBleApi  {
 
                   let processingObservable = subRecordingCountObservable
                       .flatMap { count -> Observable<PolarOfflineRecordingData> in
-
+                          
                           return Observable.range(start: 0, count: count)
                               .flatMap { subRecordingIndex -> Observable<PolarOfflineRecordingData> in
                                   Observable.create { observer in
@@ -1379,29 +1379,10 @@ extension PolarBleApiImpl: PolarBleApi  {
 
                                           _ = requestResult.subscribe(
                                               onSuccess: { offlineRecordingData in
-                                                  let settings: PolarSensorSetting = offlineRecordingData.recordingSettings?.mapToPolarSettings() ?? PolarSensorSetting()
-
-                                                  switch offlineRecordingData.data {
-                                                  case let accData as AccData:
-                                                      accumulator.accumulateAcc(accData.mapToPolarData(), startTime: offlineRecordingData.startTime, settings: settings)
-                                                  case let gyroData as GyrData:
-                                                      accumulator.accumulateGyro(gyroData.mapToPolarData(), startTime: offlineRecordingData.startTime, settings: settings)
-                                                  case let magData as MagData:
-                                                      accumulator.accumulateMag(magData.mapToPolarData(), startTime: offlineRecordingData.startTime, settings: settings)
-                                                  case let ppgData as PpgData:
-                                                      accumulator.accumulatePpg(ppgData.mapToPolarData(), startTime: offlineRecordingData.startTime, settings: settings)
-                                                  case let ppiData as PpiData:
-                                                      accumulator.accumulatePpi(ppiData.mapToPolarData(), startTime: offlineRecordingData.startTime)
-                                                  case let hrData as OfflineHrData:
-                                                      accumulator.accumulateHr(hrData.mapToPolarData(), startTime: offlineRecordingData.startTime)
-                                                  case let temperatureData as TemperatureData:
-                                                      accumulator.accumulateTemperature(temperatureData.mapToPolarData(), startTime: offlineRecordingData.startTime)
-                                                  case let skinTemperatureData as SkinTemperatureData:
-                                                      accumulator.accumulateSkinTemperature(skinTemperatureData.mapToPolarData(), startTime: offlineRecordingData.startTime)
-                                                  case _ as EmptyData:
-                                                      accumulator.accumulateEmpty(startTime: offlineRecordingData.startTime)
-                                                  default:
-                                                      observer.onError(PolarErrors.polarOfflineRecordingError(description: "GetOfflineRecording failed. Data type is not supported."))
+                                                  do {
+                                                      try accumulator.accumulate(offlineRecordingData)
+                                                  } catch {
+                                                      observer.onError(error)
                                                       return
                                                   }
                                                   observer.onCompleted()
@@ -1516,7 +1497,7 @@ extension PolarBleApiImpl: PolarBleApi  {
                 let processingObservable = subRecordingCountObservable
                     .flatMap { count -> Observable<PolarOfflineRecordingData> in
                         BleLogger.trace("Total sub recordings to download: \(count)")
-
+                        
                         return Observable.from(0..<count)
                             .concatMap { subRecordingIndex -> Observable<PolarOfflineRecordingData> in
                                 Observable.create { subObserver in
@@ -1554,30 +1535,10 @@ extension PolarBleApiImpl: PolarBleApi  {
                                         _ = requestResult.subscribe(
                                             onSuccess: { offlineRecordingData in
                                                 BleLogger.trace("Successfully parsed sub-recording \(subRecordingIndex)")
-                                                let settings: PolarSensorSetting = offlineRecordingData.recordingSettings?.mapToPolarSettings() ?? PolarSensorSetting()
-
-                                                switch offlineRecordingData.data {
-                                                case let accData as AccData:
-                                                    accumulator.accumulateAcc(accData.mapToPolarData(), startTime: offlineRecordingData.startTime, settings: settings)
-                                                case let gyroData as GyrData:
-                                                    accumulator.accumulateGyro(gyroData.mapToPolarData(), startTime: offlineRecordingData.startTime, settings: settings)
-                                                case let magData as MagData:
-                                                    accumulator.accumulateMag(magData.mapToPolarData(), startTime: offlineRecordingData.startTime, settings: settings)
-                                                case let ppgData as PpgData:
-                                                    accumulator.accumulatePpg(ppgData.mapToPolarData(), startTime: offlineRecordingData.startTime, settings: settings)
-                                                case let ppiData as PpiData:
-                                                    accumulator.accumulatePpi(ppiData.mapToPolarData(), startTime: offlineRecordingData.startTime)
-                                                case let hrData as OfflineHrData:
-                                                    accumulator.accumulateHr(hrData.mapToPolarData(), startTime: offlineRecordingData.startTime)
-                                                case let temperatureData as TemperatureData:
-                                                    accumulator.accumulateTemperature(temperatureData.mapToPolarData(), startTime: offlineRecordingData.startTime)
-                                                case let skinTemperatureData as SkinTemperatureData:
-                                                    accumulator.accumulateSkinTemperature(skinTemperatureData.mapToPolarData(), startTime: offlineRecordingData.startTime)
-                                                case _ as EmptyData:
-                                                    accumulator.accumulateEmpty(startTime: offlineRecordingData.startTime)
-                                                default:
-                                                    BleLogger.error("Unsupported data type in offline recording")
-                                                    subObserver.onError(PolarErrors.polarOfflineRecordingError(description: "GetOfflineRecording failed. Data type is not supported."))
+                                                do {
+                                                    try accumulator.accumulate(offlineRecordingData)
+                                                } catch {
+                                                    subObserver.onError(error)
                                                     return
                                                 }
                                                 subObserver.onCompleted()
