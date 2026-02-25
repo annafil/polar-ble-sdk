@@ -91,6 +91,7 @@ import com.polar.sdk.impl.utils.PolarDataUtils.mapPolarFeatureToPmdClientMeasure
 import com.polar.sdk.impl.utils.PolarDataUtils.mapPolarOfflineTriggerToPmdOfflineTrigger
 import com.polar.sdk.impl.utils.PolarDataUtils.mapPolarSecretToPmdSecret
 import com.polar.sdk.impl.utils.PolarDataUtils.mapPolarSettingsToPmdSettings
+import com.polar.sdk.impl.utils.EfficientOfflineAccumulator
 import com.polar.sdk.impl.utils.PolarFirmwareUpdateUtils
 import com.polar.sdk.impl.utils.PolarNightlyRechargeUtils
 import com.polar.sdk.impl.utils.PolarOfflineRecordingUtils
@@ -1278,9 +1279,10 @@ class BDBleApiImpl private constructor(context: Context, features: Set<PolarBleS
         secret: PolarRecordingSecret?,
         identifier: String,
         count: Int,
-        accumulator: OfflineRecordingAccumulator
+        @Suppress("UNUSED_PARAMETER") accumulator: OfflineRecordingAccumulator
     ): Single<PolarOfflineRecordingData> {
         val lastTimestamp = 0uL
+        val efficientAccumulator = EfficientOfflineAccumulator()
 
         return Observable.fromIterable(0 until count)
             .concatMapSingle { subRecordingIndex ->
@@ -1291,13 +1293,13 @@ class BDBleApiImpl private constructor(context: Context, features: Set<PolarBleS
                 client.request(buildPftpGetRequest(subRecordingPath))
                     .flatMap { byteArrayOutputStream ->
                         val offlineRecordingData = parseOfflineRecordingData(byteArrayOutputStream, entry, secret, lastTimestamp)
-                        processOfflineData(offlineRecordingData, accumulator)
+                        efficientAccumulator.accumulate(offlineRecordingData)
                         Single.just(true)
                     }
             }
             .toList()
             .map {
-                accumulator.getResult() ?: throw PolarOfflineRecordingError("No data was recorded")
+                efficientAccumulator.getResult() ?: throw PolarOfflineRecordingError("No data was recorded")
             }
     }
 
