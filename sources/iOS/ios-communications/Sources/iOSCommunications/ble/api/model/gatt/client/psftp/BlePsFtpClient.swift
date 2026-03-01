@@ -17,6 +17,23 @@ public class BlePsFtpClient: BleGattClientBase {
     var mtuNotificationEnabled: AtomicInteger!
     var pftpD2HNotificationEnabled: AtomicInteger!
     public var PROTOCOL_TIMEOUT = TimeInterval(90)
+
+    /// When false, `request()` and `write()` skip per-operation scan stop/start.
+    /// Set to false before a batch of requests, then back to true when done.
+    public var scanManagementEnabled = true
+
+    /// Call before starting a batch of `request()` calls to suppress per-request scan cycling.
+    /// Must be paired with `batchOperationFinished()`.
+    public func batchOperationStarted() {
+        scanManagementEnabled = false
+        gattServiceTransmitter?.attributeOperationStarted()
+    }
+
+    /// Call after all `request()` calls in a batch complete (or on cancellation/error).
+    public func batchOperationFinished() {
+        scanManagementEnabled = true
+        gattServiceTransmitter?.attributeOperationFinished()
+    }
     
     private let PROTOCOL_TIMEOUT_EXTENDED = TimeInterval(900)
     private let extendedWriteTimeoutFilePaths: [String] = ["/SYNCPART.TGZ"]
@@ -312,7 +329,9 @@ public class BlePsFtpClient: BleGattClientBase {
             let block = BlockOperation()
             block.addExecutionBlock { [unowned self, weak block] in
                 BleLogger.trace("PS-FTP new request operation")
-                self.gattServiceTransmitter?.attributeOperationStarted()
+                if self.scanManagementEnabled {
+                    self.gattServiceTransmitter?.attributeOperationStarted()
+                }
                 if !(block?.isCancelled ?? true) {
                     self.resetMtuPipe()
                     let totalStream = BlePsFtpUtility.makeCompleteMessageStream(header as Data, type: BlePsFtpUtility.MessageType.request, id: 0)
@@ -386,7 +405,9 @@ public class BlePsFtpClient: BleGattClientBase {
             self.mtuOperationQueue.addOperation(block)
             return Disposables.create {
                 BleLogger.trace("PS-FTP request operation DISPOSED")
-                self.gattServiceTransmitter?.attributeOperationFinished()
+                if self.scanManagementEnabled {
+                    self.gattServiceTransmitter?.attributeOperationFinished()
+                }
                 block.cancel()
                 if shouldClearProgressCallback {
                     self.progressCallback = nil
@@ -394,7 +415,7 @@ public class BlePsFtpClient: BleGattClientBase {
             }
         }
     }
-    
+
     /// Write a file to device, can be called many at once,
     /// but will internally make operations atomic
     ///
@@ -420,7 +441,9 @@ public class BlePsFtpClient: BleGattClientBase {
 
             block.addExecutionBlock { [unowned self, weak block] in
                 BleLogger.trace("PS-FTP new write operation")
-                self.gattServiceTransmitter?.attributeOperationStarted()
+                if self.scanManagementEnabled {
+                    self.gattServiceTransmitter?.attributeOperationStarted()
+                }
                 if !(block?.isCancelled ?? true) {
                     self.currentOperationWrite.set(true)
                     self.resetMtuPipe()
@@ -541,7 +564,9 @@ public class BlePsFtpClient: BleGattClientBase {
             return Disposables.create {
                 BleLogger.trace("PS-FTP write operation DISPOSED")
                 self.currentOperationWrite.set(false)
-                self.gattServiceTransmitter?.attributeOperationFinished()
+                if self.scanManagementEnabled {
+                    self.gattServiceTransmitter?.attributeOperationFinished()
+                }
                 block.cancel()
             }
         }
