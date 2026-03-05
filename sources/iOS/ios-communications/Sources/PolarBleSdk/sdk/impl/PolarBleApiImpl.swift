@@ -681,16 +681,18 @@ extension PolarBleApiImpl: PolarBleApi  {
     func connectToDevice(_ identifier: String) throws {
         var session = try serviceClientUtils.fetchSession(identifier)
         if  session == nil ||
-            session?.state == BleDeviceSession.DeviceSessionState.sessionClosed  ||
                 session?.state == BleDeviceSession.DeviceSessionState.sessionClosing {
-            
+
             if let sub = connectSubscriptions[identifier] {
                 sub.dispose()
             }
-            
+
             session = nil
         }
             if session != nil {
+                // Reopen existing session directly (skips BLE scan).
+                // Works for sessionClosed (after explicit disconnect) because the
+                // CBPeripheral is still cached via state restoration.
 #if os(watchOS)
                 session!.connectionType = .directConnection
 #endif

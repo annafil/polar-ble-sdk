@@ -35,11 +35,11 @@ public class CBDeviceListenerImpl: NSObject, SDKCBCentralManagerDelegate {
     
     private let SESSION_TEAR_DOWN_TIMEOUT_MS = 1000
     
-    fileprivate lazy var manager = SDKCBCentralManager(delegate: self, queue: queueBle, options: nil)
+    lazy var manager = SDKCBCentralManager(delegate: self, queue: queueBle, options: nil)
     
     fileprivate let sessions = AtomicList<CBDeviceSessionImpl>()
     fileprivate var queue: DispatchQueue
-    fileprivate var queueBle: DispatchQueue
+    var queueBle: DispatchQueue
     fileprivate var connectionObservers = AtomicList<RxObserver<(session: BleDeviceSession, state: BleDeviceSession.DeviceSessionState)>>()
     fileprivate let powerObservers = AtomicList<RxObserver<BleState>>()
     fileprivate lazy var scanner = CBScanner(manager, queue: queue, sessions: sessions)
@@ -169,7 +169,7 @@ public class CBDeviceListenerImpl: NSObject, SDKCBCentralManagerDelegate {
         handleDeviceDiscovered(central, didDiscover: peripheral, advertisementData: advertisementData, rssi: RSSI)
     }
     
-    private func handleDeviceDiscovered(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String : Any], rssi RSSI: NSNumber) {
+    func handleDeviceDiscovered(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String : Any], rssi RSSI: NSNumber) {
         var session = self.session(peripheral)
         if automaticH10Mapping &&
             peripheral.name?.contains("H10") ?? false ||
