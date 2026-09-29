@@ -114,7 +114,7 @@ internal class PolarAutomaticSamplesUtils {
                     var fileIndex = 0
 
                     return Observable.from(filteredFiles)
-                        .concatMap { fileName -> Observable<Polar247PPiSamplesData?> in
+                        .concatMap { fileName -> Observable<Polar247PPiSamplesData> in
                             let filePath = "\(autoSamplesPath)\(fileName)"
                             let fileOperation = Protocol_PbPFtpOperation.with {
                                 $0.command = .get
@@ -128,7 +128,7 @@ internal class PolarAutomaticSamplesUtils {
 
                             return client.request(try! fileOperation.serializedData())
                                 .asObservable()
-                                .map { fileResponse -> Polar247PPiSamplesData? in
+                                .map { fileResponse -> [Polar247PPiSamplesData] in
                                     // TEMP: instrumentation, remove before commit
                                     let transferMs = Int(Date().timeIntervalSince(fileStart) * 1000)
                                     ppiLog("[\(fileNum)/\(filteredFiles.count)] \(fileName) transfer end (\(transferMs)ms)")
@@ -140,25 +140,15 @@ internal class PolarAutomaticSamplesUtils {
                                         ppiLog("[\(fileNum)/\(filteredFiles.count)] \(fileName) parse end (\(parseMs)ms) — total elapsed: \(totalMs)ms")
                                     }
                                     do {
-                                        let sampleSessions = try Data_PbAutomaticSampleSessions(serializedData: Data(fileResponse))
-                                        let sampleDateProto = sampleSessions.day
-                                        let sampleDate = DateComponents(
-                                            year: Int(sampleDateProto.year),
-                                            month: Int(sampleDateProto.month),
-                                            day: Int(sampleDateProto.day)
-                                        )
-
-                                        guard sampleDate >= dateFrom && sampleDate <= dateTo else { return nil }
-
-                                        let samples = sampleSessions.ppiSamples.map { Polar247PPiSamplesData.fromPbPPiDataSamples(ppiData: $0) }
-                                        return Polar247PPiSamplesData(date: Calendar.current.dateComponents([.year, .month, .day], from: Calendar.current.date(from: sampleDate)!), samples: samples)
+                                        return try Polar247PPiSamplesData.fromAutoSamplesFile(Data(fileResponse), now: Date())
+                                            .filter { $0.date >= dateFrom && $0.date <= dateTo }
                                     } catch {
                                         BleLogger.error(TAG, "Failed to parse PPI in \(fileName): \(error)")
-                                        return nil
+                                        return []
                                     }
                                 }
+                                .flatMap { Observable.from($0) }
                         }
-                        .compactMap { $0 }
                         .toArray()
                 } catch {
                     BleLogger.error(TAG, "read247PPiSamples() failed: \(error)")

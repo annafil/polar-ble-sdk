@@ -1,6 +1,7 @@
 //  Copyright © 2025 Polar. All rights reserved.
 
 import Foundation
+import SwiftProtobuf
 
 /// Polar Peak-to-peak interval data
 /// - Parameters:
@@ -133,6 +134,72 @@ public struct Polar247PPiSamplesData: Codable {
             ppiErrorEstimateList: ppiErrorEstimateList,
             statusList: ppiSampleStatusList
         )
+    }
+}
+
+extension Polar247PPiSamplesData {
+
+    /// How far a sample's time-of-day may run ahead of the phone's clock and still count as
+    /// today when inferring a missing day (covers device/phone clock drift).
+    private static let clockSkewToleranceSeconds = 60 * 60
+
+    /// Parses one raw AUTOS file into per-day PPI data.
+    ///
+    /// Loop firmware 6.2.x writes AUTOS files without the required `day` field (seen on files
+    /// recreated after the AUTOS directory is deleted). Such files are dated by inference from
+    /// `now`: the last sample belongs to today (or yesterday if its time-of-day is later than
+    /// `now`), and each backwards step in time-of-day marks a midnight rollover.
+    static func fromAutoSamplesFile(_ data: Data, now: Date, calendar: Calendar = .current) throws -> [Polar247PPiSamplesData] {
+        let sessions: Data_PbAutomaticSampleSessions
+        do {
+            sessions = try Data_PbAutomaticSampleSessions(serializedData: data)
+        } catch BinaryDecodingError.missingRequiredFields {
+            let partial = try Data_PbAutomaticSampleSessions(serializedData: data, partial: true)
+            // Only a missing `day` is recoverable — any other missing field is still a corrupt file.
+            var withPlaceholderDay = partial
+            withPlaceholderDay.day = PbDate.with { $0.year = 1; $0.month = 1; $0.day = 1 }
+            guard !partial.hasDay, withPlaceholderDay.isInitialized else {
+                throw BinaryDecodingError.missingRequiredFields
+            }
+            return inferDays(for: partial.ppiSamples, now: now, calendar: calendar)
+        }
+        let day = DateComponents(year: Int(sessions.day.year), month: Int(sessions.day.month), day: Int(sessions.day.day))
+        return [Polar247PPiSamplesData(date: day, samples: sessions.ppiSamples.map { fromPbPPiDataSamples(ppiData: $0) })]
+    }
+
+    /// Groups samples (in recording order) into days, walking backwards from `now`.
+    private static func inferDays(for samples: [Data_PbPpIntervalAutoSamples], now: Date, calendar: Calendar) -> [Polar247PPiSamplesData] {
+        func secondsOfDay(_ time: PbTime) -> Int {
+            Int(time.hour) * 3600 + Int(time.minute) * 60 + Int(time.seconds)
+        }
+        let nowParts = calendar.dateComponents([.hour, .minute, .second], from: now)
+        let nowSeconds = nowParts.hour! * 3600 + nowParts.minute! * 60 + nowParts.second!
+
+        var dayOffset = 0
+        var laterSeconds: Int? = nil
+        var buckets: [(dayOffset: Int, samples: [PolarPpiDataSample])] = []
+        for sample in samples.reversed() {
+            let seconds = secondsOfDay(sample.recordingTime)
+            if let later = laterSeconds {
+                if seconds > later { dayOffset -= 1 }  // crossed midnight going backwards
+            } else if seconds > nowSeconds + clockSkewToleranceSeconds {
+                dayOffset = -1  // newest sample is from before midnight
+            }
+            laterSeconds = seconds
+            if buckets.last?.dayOffset != dayOffset {
+                buckets.append((dayOffset, []))
+            }
+            buckets[buckets.count - 1].samples.append(fromPbPPiDataSamples(ppiData: sample))
+        }
+
+        let today = calendar.startOfDay(for: now)
+        return buckets.reversed().map { bucket in
+            let date = calendar.date(byAdding: .day, value: bucket.dayOffset, to: today)!
+            return Polar247PPiSamplesData(
+                date: calendar.dateComponents([.year, .month, .day], from: date),
+                samples: bucket.samples.reversed()
+            )
+        }
     }
 }
 
